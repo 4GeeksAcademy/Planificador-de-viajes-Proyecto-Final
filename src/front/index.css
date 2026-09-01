@@ -1,0 +1,211 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap');
+
+:root {
+	font-family: 'DM Sans', sans-serif;
+	color: #12343B;
+	background: #EAF7FA;
+}
+
+html {
+	scroll-behavior: smooth;
+	scrollbar-color: #12343B transparent;
+	scrollbar-width: thin;
+}
+
+html::-webkit-scrollbar {
+	width: 10px;
+}
+
+html::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+html::-webkit-scrollbar-thumb {
+	background: #12343B;
+	border: 2px solid transparent;
+	border-radius: 6px;
+	background-clip: padding-box;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+	background: #0F6B78;
+	background-clip: padding-box;
+}
+
+body {
+	margin: 0;
+	min-width: 320px;
+	background: #EAF7FA;
+}
+
+#root {
+	min-height: 100vh;
+}
+
+.object-fit-cover {
+	object-fit: cover;
+}
+
+.py-lg-6 {
+	padding-top: 6rem !important;
+	padding-bottom: 6rem !important;
+}
+
+@media (max-width: 991.98px) {
+	.py-lg-6 {
+		padding-top: 4rem !important;
+		padding-bottom: 4rem !important;
+	}
+}
+
+.boton-crear-viaje.btn {
+	background-color: #D4F0F5;
+	border: 1px solid #B8DCE3;
+	border-radius: 0;
+	color: #12343B;
+	transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.boton-crear-viaje.btn:hover,
+.boton-crear-viaje.btn:active {
+	background-color: #12343B;
+	border-color: #12343B;
+	color: #FFFFFF;
+}
+
+.boton-crear-viaje.btn:focus-visible {
+	box-shadow: 0 0 0 0.2rem rgba(18, 52, 59, 0.25);
+}
+
+.dropdown-seleccion {
+	position: relative;
+	min-width: 10.2rem;
+}
+
+.dropdown-seleccion-boton {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	width: 100%;
+	padding: 0.375rem 0.75rem;
+	background-color: #EAF7FA;
+	border: 1px solid #B8DCE3;
+	border-radius: 0;
+	color: #12343B;
+	text-align: left;
+	transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.dropdown-seleccion-boton:hover,
+.dropdown-seleccion-boton[aria-expanded="true"] {
+	background-color: #D4F0F5;
+	border-color: #078A9A;
+}
+
+.dropdown-seleccion-boton:focus-visible {
+	outline: none;
+	border-color: #078A9A;
+	box-shadow: 0 0 0 0.2rem rgba(7, 138, 154, 0.2);
+}
+
+.dropdown-seleccion-menu {
+	position: absolute;
+	top: calc(100% + 0.35rem);
+	left: 0;
+	z-index: 20;
+	width: 100%;
+	min-width: max-content;
+	padding: 0.5rem;
+	margin: 0;
+	background-color: #EAF7FA;
+	border: 0;
+	border-top: 3px solid #28C3D4;
+	border-radius: 0;
+	box-shadow: 0 0.25rem 0.5rem rgba(18, 52, 59, 0.15);
+	list-style: none;
+}
+
+.dropdown-seleccion-opcion {
+	width: 100%;
+	padding: 0.5rem 0.75rem;
+	background-color: transparent;
+	border: 0;
+	color: #12343B;
+	text-align: left;
+	white-space: nowrap;
+}
+
+.dropdown-seleccion-opcion:hover,
+.dropdown-seleccion-opcion:focus-visible {
+	background-color: #D4F0F5;
+	color: #12343B;
+	outline: none;
+}
+
+.dropdown-seleccion-opcion[aria-selected="true"] {
+	background-color: #12343B;
+	color: #FFFFFF;
+}
+
+.modal-eliminacion-fondo {
+	position: fixed;
+	inset: 0;
+	z-index: 1100;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1.5rem;
+	background-color: rgba(18, 52, 59, 0.7);
+}
+
+.modal-eliminacion {
+	width: min(100%, 32rem);
+	padding: 2rem;
+	background-color: #FFFFFF;
+	border-top: 3px solid #28C3D4;
+	box-shadow: 0 1rem 3rem rgba(18, 52, 59, 0.3);
+}
+
+.boton-cancelar-eliminacion.btn {
+	background-color: #D4F0F5;
+	border: 1px solid #B8DCE3;
+	border-radius: 0;
+	color: #12343B;
+}
+
+.boton-cancelar-eliminacion.btn:hover {
+	background-color: #EAF7FA;
+	border-color: #078A9A;
+	color: #12343B;
+}
+
+.boton-confirmar-eliminacion.btn {
+	position: relative;
+	width: 18.5rem;
+	overflow: hidden;
+	white-space: nowrap;
+	background-color: #12343B;
+	border: 1px solid #12343B;
+	border-radius: 0;
+	color: #FFFFFF;
+}
+
+.progreso-confirmacion {
+	position: absolute;
+	inset: 0 auto 0 0;
+	width: 0;
+	background-color: #078A9A;
+	transition: width 1s linear;
+}
+
+.progreso-confirmacion-activo {
+	width: 100%;
+}
+
+.boton-confirmar-eliminacion.btn:disabled {
+	background-color: #456B75;
+	border-color: #456B75;
+	color: #FFFFFF;
+	opacity: 1;
+}

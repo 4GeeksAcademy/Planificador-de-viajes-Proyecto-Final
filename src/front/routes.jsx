@@ -1,38 +1,43 @@
-// Import necessary components and functions from react-router-dom.
-
 import {
-    createBrowserRouter,
-    createRoutesFromElements,
-    Route,
+  createBrowserRouter,
+  createRoutesFromElements,
+  Route,
 } from "react-router-dom";
 import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
-import { Single } from "./pages/Single";
-import { Demo } from "./pages/Demo";
-import { CitiesLab } from "./pages/CitiesLab";
-import { PlacesLab } from "./pages/PlacesLab";
-import { MapLab } from "./pages/MapLab";
-import { PlacesMapLab } from "./pages/PlacesMapLab";
+import { Login } from "./pages/Login";
+import { Register } from "./pages/Register";
+import { RecuperarContr } from "./pages/RecuperarContr";
+import { CrearViaje } from "./pages/CrearViaje";
+import { DetalleViaje } from "./pages/DetalleViaje";
+import { MisViajes } from "./pages/MisViajes";
+import { RutaProtegida } from "./components/RutaProtegida";
+import { Explorar } from "./pages/Explorar";
+import { Ciudad } from "./pages/Ciudad";
 
 export const router = createBrowserRouter(
-    createRoutesFromElements(
-    // CreateRoutesFromElements function allows you to build route elements declaratively.
-    // Create your routes here, if you want to keep the Navbar and Footer in all views, add your new routes inside the containing Route.
-    // Root, on the contrary, create a sister Route, if you have doubts, try it!
-    // Note: keep in mind that errorElement will be the default page when you don't get a route, customize that page to make your project more attractive.
-    // Note: The child paths of the Layout element replace the Outlet component with the elements contained in the "element" attribute of these child paths.
+  createRoutesFromElements(
+    // Definir la raíz del proyecto inyectando el diseño base global de la aplicación
+    <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>}>
+      {/* Habilitar la ruta raíz para cargar la pantalla de bienvenida */}
+      <Route path="/" element={<Home />} />
+      <Route path="/explorar" element={<Explorar />} />
+      <Route path="/explorar/:citySlug" element={<Ciudad />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/recuperacion" element={<RecuperarContr />} />
 
-      // Root Route: All navigation will start from here.
-      <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
+      {/* Anidar rutas bajo el validador de sesiones privadas obligatorias */}
+      <Route element={<RutaProtegida />}>
+        {/* Cargar el formulario para dar de alta nuevas aventuras */}
+        <Route path="/trips/new" element={<CrearViaje />} />
 
-        {/* Nested Routes: Defines sub-routes within the BaseHome component. */}
-        <Route path= "/" element={<Home />} />
-        <Route path="/single/:theId" element={ <Single />} />  {/* Dynamic route for single items */}
-        <Route path="/demo" element={<Demo />} />
-        <Route path="/lab/ciudades" element={<CitiesLab />} />
-        <Route path="/lab/lugares" element={<PlacesLab />} />
-        <Route path="/lab/mapa" element={<MapLab />} />
-        <Route path="/lab/mapa-lugares" element={<PlacesMapLab />} />
+        {/* Desplegar la lista con la totalidad de itinerarios del usuario */}
+        <Route path="/trips" element={<MisViajes />} />
+
+        {/* Resolver la coincidencia exacta de redirección tras crear el viaje */}
+        <Route path="/trips/:tripId" element={<DetalleViaje />} />
       </Route>
-    )
+    </Route>,
+  ),
 );
