@@ -21,6 +21,7 @@ flask-jwt-extended = "*"
 python-dotenv = "*"
 psycopg2-binary = "*"
 flask-admin = "*"
+flask-mail = "*"
 
 [requires]
 python_version = "3.13"

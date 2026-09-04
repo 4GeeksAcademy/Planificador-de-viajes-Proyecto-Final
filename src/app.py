@@ -21,7 +21,19 @@ ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
 static_file_dir = os.path.join(os.path.dirname(
     os.path.realpath(__file__)), '../dist/')
 app = Flask(__name__)
-CORS(app)
+# Permitir CORS desde cualquier origen (solo desarrollo)
+CORS(app, origins=[
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "*"  # ⭐ Permite todos los orígenes (solo desarrollo)
+], supports_credentials=True)
+
 app.url_map.strict_slashes = False
 
 # ============================================================
