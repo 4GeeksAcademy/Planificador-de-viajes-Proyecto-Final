@@ -11,8 +11,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import (create_access_token, create_refresh_token, JWTManager, jwt_required, get_jwt_identity)
 from datetime import date, time as datetime_time
 from sqlalchemy import or_
-from api.utils.verification import generar_token_verificacion, verificar_token
-from api.utils.email import enviar_correo_verificacion
+from api.utils.verification import (
+    generar_token_verificacion, 
+    verificar_token,
+    generar_token_recuperacion,
+    verificar_token_recuperacion
+)
+from api.utils.email import enviar_correo_verificacion, enviar_correo_recuperacion
 api = Blueprint('api', __name__)
 
 # Allow CORS requests to this API
@@ -55,16 +60,19 @@ def get_explorar_direccion():
 @api.route('/signup', methods=['POST'])
 def signup():
     data = request.json
-    existing_user_email = User.query.filter_by(email=data["email"]).first()
-    if existing_user_email:
-        return jsonify({"error": "El email ya está registrado, intenta con uno diferente"}), 409
-
-    existing_user_name = User.query.filter_by(username=data["username"]).first()
-    if existing_user_name:
-        return jsonify({"error": "El nombre de usuario ya está registrado, intenta con uno diferente"}), 409
+    
+    existing_user = User.query.filter(
+        or_(User.email == data["email"], User.username == data["username"])
+    ).first()
+    
+    if existing_user:
+        return jsonify({"error": "Usuario o email no disponible"}), 409
+    
     token = generar_token_verificacion(data["email"])
+    
     if not token:
         return jsonify({"error": "Error al generar token de verificación"}), 500
+    
     new_user = User(
         username=data["username"],
         email=data["email"],
@@ -82,10 +90,66 @@ def signup():
     email_sent = enviar_correo_verificacion(data["email"], token)
     
     if email_sent:
-        return jsonify({"message": "Usuario creado exitosamente. Revisa tu correo para verificar tu cuenta.", "email": data["email"]}), 201
+        return jsonify({
+            "message": "Usuario creado exitosamente. Revisa tu correo para verificar tu cuenta.",
+            "email": data["email"]
+        }), 201
     else:
-        return jsonify({"message": "Usuario creado pero no se pudo enviar el correo de verificación.", "email": data["email"]}), 201
+        return jsonify({
+            "message": "Usuario creado pero no se pudo enviar el correo de verificación.",
+            "email": data["email"]
+        }), 201
+        
+@api.route('/reset-password/<token>', methods=['POST'])
+def reset_password(token):
+    from api.utils.verification import verificar_token_recuperacion
+    #verificar el token
+    email = verificar_token_recuperacion(token)
+    if not email:
+        return jsonify({"error": "Token inválido o expirado"}), 400
+    #buscar usuario
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    #obtener nueva contraseña
+    data = request.json
+    new_password = data.get("new_password")
+    
+    if not new_password:
+        return jsonify({"error": "La nueva contraseña es requerida"}), 400
+    
+    if len(new_password) < 6:
+        return jsonify({"error": "La contraseña debe tener al menos 6 caracteres"}), 400
+    
+    #actualizar contraseña
+    user.password_hash = generate_password_hash(new_password)
+    user.verification_token = None #limpiar token
+    db.session.commit()
+    
+    return jsonify({"message": "Contraseña actualizada exitosamente. Ya puedes inicar sesión."}), 200
 
+
+@api.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    data = request.json
+    email = data.get('email') 
+    
+    if not email:
+        return jsonify({"error": "El email es requerido"}), 400
+    
+    user = User.query.filter_by(email=email).first()
+    
+    if user:
+        token = generar_token_recuperacion(email)
+        if token:
+            user.verification_token = token
+            db.session.commit()
+            enviar_correo_recuperacion(email, token)
+    
+    return jsonify({
+        "message": "Si el email está registrado, recibirás un enlace para restablecer tu contraseña."
+    }), 200
+    
 @api.route('/verify-email/<token>', methods=['GET'])
 def verify_email(token):
     from api.utils.verification import verificar_token
