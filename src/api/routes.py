@@ -11,6 +11,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import (create_access_token, create_refresh_token, JWTManager, jwt_required, get_jwt_identity)
 from datetime import date, time as datetime_time
 from sqlalchemy import or_
+from datetime import datetime, timedelta
 from api.utils.verification import (
     generar_token_verificacion, 
     verificar_token,
@@ -81,7 +82,8 @@ def signup():
         last_name=data.get("last_name", ""),
         is_active=False,          
         is_verified=False,        
-        verification_token=token   
+        verification_token=token,   
+        verification_token_expires_at=datetime.utcnow() + timedelta(hours=1)
     )
 
     db.session.add(new_user)
@@ -150,29 +152,83 @@ def forgot_password():
         "message": "Si el email está registrado, recibirás un enlace para restablecer tu contraseña."
     }), 200
     
+
 @api.route('/verify-email/<token>', methods=['GET'])
 def verify_email(token):
-    from api.utils.verification import verificar_token
-    from datetime import datetime
-    
+    # 1️⃣ Verificar el token con itsdangerous
     email = verificar_token(token)
     if not email:
-        return jsonify({"error": "Token inválido o expirado"}), 400
+        return jsonify({
+            "error": "Token inválido o expirado",
+            "can_resend": True
+        }), 400
+
+    # 2️⃣ Buscar usuario
     user = User.query.filter_by(email=email).first()
-    
     if not user:
         return jsonify({"error": "Usuario no encontrado"}), 404
-    
+
+    # 3️ Verificar expiración 
+    if user.verification_token_expires_at and user.verification_token_expires_at < datetime.utcnow():
+        return jsonify({
+            "error": "El token ha expirado. Solicita un nuevo enlace.",
+            "can_resend": True
+        }), 400
+
+    # 4️ Si ya está verificado
     if user.is_verified:
         return jsonify({"message": "El correo ya ha sido verificado."}), 200
-    
+
+    # 5️⃣ ACTIVAR la cuenta
     user.is_verified = True
     user.is_active = True
     user.verified_at = datetime.utcnow()
     user.verification_token = None
+    user.verification_token_expires_at = None
     db.session.commit()
-    
+
     return jsonify({"message": "¡Correo verificado exitosamente!"}), 200
+
+@api.route('/resend-verification', methods=['POST'])
+def resend_verification():
+    """
+    📧 Reenvía el correo de verificación a un usuario no verificado
+    """
+    data = request.json
+    email = data.get('email')
+
+    if not email:
+        return jsonify({"error": "El email es requerido"}), 400
+
+    user = User.query.filter_by(email=email).first()
+
+    # 🔒 Mensaje genérico por seguridad
+    if not user or user.is_verified:
+        return jsonify({
+            "message": "Si el email está registrado y pendiente de verificación, recibirás un nuevo enlace."
+        }), 200
+
+    # Generar nuevo token
+    new_token = generar_token_verificacion(email)
+    if not new_token:
+        return jsonify({"error": "Error al generar el token"}), 500
+
+    # Actualizar usuario
+    user.verification_token = new_token
+    user.verification_token_expires_at = datetime.utcnow() + timedelta(hours=1)
+    db.session.commit()
+
+    # Enviar correo
+    email_sent = enviar_correo_verificacion(email, new_token)
+
+    if email_sent:
+        return jsonify({
+            "message": "¡Nuevo enlace de verificación enviado! Revisa tu correo (incluyendo SPAM)."
+        }), 200
+    else:
+        return jsonify({
+            "message": "No se pudo enviar el correo. Intenta de nuevo más tarde."
+        }), 500
     
 @api.route('/login', methods=['POST'])
 def login():

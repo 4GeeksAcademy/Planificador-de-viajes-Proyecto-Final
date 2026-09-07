@@ -21,6 +21,7 @@ class User(db.Model):
     is_admin: Mapped[bool] = mapped_column(default=False)
     is_verified: Mapped[bool] = mapped_column(default=False)
     verification_token: Mapped[str] = mapped_column(String(500), nullable=True)
+    verification_token_expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     verified_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     trips: Mapped[List["Trip"]] = relationship(
