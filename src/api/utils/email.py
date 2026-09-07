@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 def enviar_correo_verificacion(email, token):
     # 1️⃣ CONSTRUIR LA URL DE VERIFICACIÓN
-    frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5173')
+    frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:3000')
     verification_url = f"{frontend_url}/verificar/{token}"
     
     print(f"📧 Enviando correo a: {email}")
