@@ -18,6 +18,7 @@ class User(db.Model):
         String(120), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True)
+    is_admin: Mapped[bool] = mapped_column(default=False)
     is_verified: Mapped[bool] = mapped_column(default=False)
     verification_token: Mapped[str] = mapped_column(String(500), nullable=True)
     verified_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
@@ -35,6 +36,7 @@ class User(db.Model):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "is_active": self.is_active,
+            "is_admin": self.is_admin,
             "is_verififed": self.is_verified,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "verified_at": self.verified_at.isoformat() if self.verified_at else None

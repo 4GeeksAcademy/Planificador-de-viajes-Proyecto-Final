@@ -100,7 +100,7 @@ def enviar_correo_recuperacion(email, token):
     #enviar correo con el enlace para restablecer constraseña
     
     #Url de recuperación
-    frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5173')
+    frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:3000')
     reset_url = f"{frontend_url}/reset-password/{token}"
     
     print(f"Enviando correo de recuperación a: {email}")
