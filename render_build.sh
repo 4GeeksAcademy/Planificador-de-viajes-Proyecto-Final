@@ -3,8 +3,10 @@
 set -o errexit
 
 npm ci
+npm install
 npm run build
 
-pipenv install --deploy --ignore-pipfile
+python -m pip install pipenv
+python -m pipenv pipenv install --deploy
 
 python -m pipenv run upgrade
