@@ -26,6 +26,9 @@ const normalizarUsuario = (usuario) => ({
 export const Admin = () => {
 	const [metricas, setMetricas] = useState(metricasIniciales);
 	const [usuarios, setUsuarios] = useState([]);
+	const [viajes, setViajes] = useState([]);
+	const [favoritos, setFavoritos] = useState([]);
+	const [tablaActiva, setTablaActiva] = useState("usuarios");
 	const [cargando, setCargando] = useState(true);
 	const [guardandoId, setGuardandoId] = useState(null);
 	const [eliminandoId, setEliminandoId] = useState(null);
@@ -37,20 +40,28 @@ export const Admin = () => {
 		setCargando(true);
 		setError("");
 		try {
-			const [resumen, respuestaUsuarios] = await Promise.all([
+			const [resumen, respuestaUsuarios, respuestaViajes, respuestaFavoritos] = await Promise.all([
 				fetchConSesion(`${import.meta.env.VITE_BACKEND_URL}/api/admin/summary`),
 				fetchConSesion(`${import.meta.env.VITE_BACKEND_URL}/api/admin/users`),
+				fetchConSesion(`${import.meta.env.VITE_BACKEND_URL}/api/admin/trips`),
+				fetchConSesion(`${import.meta.env.VITE_BACKEND_URL}/api/admin/favorites`),
 			]);
 			const datosResumen = await resumen.json().catch(() => ({}));
 			const datosUsuarios = await respuestaUsuarios.json().catch(() => ({}));
+			const datosViajes = await respuestaViajes.json().catch(() => ({}));
+			const datosFavoritos = await respuestaFavoritos.json().catch(() => ({}));
 			if (!resumen.ok) {
 				throw new Error(obtenerMensajeErrorBackend(datosResumen, "No fue posible cargar el resumen."));
 			}
 			if (!respuestaUsuarios.ok) {
 				throw new Error(obtenerMensajeErrorBackend(datosUsuarios, "No fue posible cargar los usuarios."));
 			}
+			if (!respuestaViajes.ok) throw new Error(obtenerMensajeErrorBackend(datosViajes, "No fue posible cargar los viajes."));
+			if (!respuestaFavoritos.ok) throw new Error(obtenerMensajeErrorBackend(datosFavoritos, "No fue posible cargar los favoritos."));
 			setMetricas(datosResumen.metrics || metricasIniciales);
 			setUsuarios((datosUsuarios.users || []).map(normalizarUsuario));
+			setViajes(datosViajes.trips || []);
+			setFavoritos(datosFavoritos.favorites || []);
 		} catch (errorDeRed) {
 			setError(errorDeRed.message || "No fue posible conectar con el servidor.");
 		} finally {
@@ -156,7 +167,11 @@ export const Admin = () => {
 					))}
 				</section>
 
-				<section className="p-4 p-lg-5" style={{ backgroundColor: "#FFFFFF" }}>
+				<nav className="d-flex flex-wrap gap-2 mb-3" aria-label="Tablas administrativas">
+					{[["usuarios", "Usuarios"], ["viajes", "Viajes"], ["favoritos", "Favoritos"]].map(([clave, etiqueta]) => <button key={clave} type="button" onClick={() => setTablaActiva(clave)} className="btn btn-sm rounded-0" aria-pressed={tablaActiva === clave} style={{ backgroundColor: tablaActiva === clave ? "#12343B" : "#D4F0F5", color: tablaActiva === clave ? "#FFFFFF" : "#12343B" }}>{etiqueta}</button>)}
+				</nav>
+
+				<section className="p-4 p-lg-5" style={{ backgroundColor: "#FFFFFF", display: tablaActiva === "usuarios" ? "block" : "none" }}>
 					<div className="d-flex justify-content-between align-items-center gap-3 mb-4">
 						<h2 className="h3 mb-0" style={{ color: "#12343B", fontFamily: "Fraunces, Georgia, serif" }}>Usuarios</h2>
 						<span className="badge rounded-0 px-3 py-2" style={{ backgroundColor: "#D4F0F5", color: "#12343B" }}>{usuarios.length} registrados</span>
@@ -198,6 +213,16 @@ export const Admin = () => {
 							</table>
 						</div>
 					)}
+				</section>
+
+				<section className="p-4 p-lg-5" style={{ backgroundColor: "#FFFFFF", display: tablaActiva === "viajes" ? "block" : "none" }} aria-label="Tabla de viajes">
+					<div className="d-flex justify-content-between align-items-center gap-3 mb-4"><h2 className="h3 mb-0" style={{ color: "#12343B", fontFamily: "Fraunces, Georgia, serif" }}>Viajes</h2><span className="badge rounded-0 px-3 py-2" style={{ backgroundColor: "#D4F0F5", color: "#12343B" }}>{viajes.length} registrados</span></div>
+					<div className="table-responsive"><table className="table align-middle mb-0"><thead><tr><th>Viaje</th><th>Usuario</th><th>Fechas</th><th>Destinos</th></tr></thead><tbody>{viajes.map((viaje) => <tr key={viaje.id}><td className="fw-semibold" style={{ color: "#12343B" }}>{viaje.name}</td><td>{viaje.username}</td><td style={{ color: "#456B75" }}>{formatoFecha(viaje.start_date)} — {formatoFecha(viaje.end_date)}</td><td>{viaje.destinations}</td></tr>)}</tbody></table></div>
+				</section>
+
+				<section className="p-4 p-lg-5" style={{ backgroundColor: "#FFFFFF", display: tablaActiva === "favoritos" ? "block" : "none" }} aria-label="Tabla de favoritos">
+					<div className="d-flex justify-content-between align-items-center gap-3 mb-4"><h2 className="h3 mb-0" style={{ color: "#12343B", fontFamily: "Fraunces, Georgia, serif" }}>Favoritos</h2><span className="badge rounded-0 px-3 py-2" style={{ backgroundColor: "#D4F0F5", color: "#12343B" }}>{favoritos.length} registrados</span></div>
+					<div className="table-responsive"><table className="table align-middle mb-0"><thead><tr><th>Usuario</th><th>Lugar</th><th>Ciudad</th><th>Guardado</th></tr></thead><tbody>{favoritos.map((favorito) => <tr key={favorito.id}><td className="fw-semibold" style={{ color: "#12343B" }}>{favorito.username}</td><td>{favorito.place_name}</td><td>{favorito.place_city}</td><td style={{ color: "#456B75" }}>{formatoFecha(favorito.created_at)}</td></tr>)}</tbody></table></div>
 				</section>
 			</div>
 		</main>

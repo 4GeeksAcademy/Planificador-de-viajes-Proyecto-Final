@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ModalConfirmacionEliminacion } from "../components/ModalConfirmacionEliminacion";
 import { obtenerMensajeErrorBackend } from "../utils/autenticacion.mjs";
 import { fetchConSesion } from "../utils/sesion.mjs";
 import { validarFechasViaje } from "../utils/viajes.mjs";
+import { useEntradaPagina } from "../animaciones/useEntradaPagina";
 
 const estiloTitulo = {
 	fontFamily: "Fraunces, Georgia, serif",
@@ -69,6 +70,8 @@ const formatearMes = (mes) => {
 };
 
 export const DetalleViaje = () => {
+	const paginaRef = useRef(null);
+	useEntradaPagina(paginaRef);
 	const { tripId } = useParams();
 	const navigate = useNavigate();
 	const [viaje, setViaje] = useState(null);
@@ -196,7 +199,7 @@ export const DetalleViaje = () => {
 	if (!viaje || !formulario) return <main className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: "#EAF7FA" }}><div className="alert alert-danger rounded-0">{error || "No encontramos este viaje."}</div></main>;
 
 	return (
-		<main className="min-vh-100" style={{ backgroundColor: "#EAF7FA" }}>
+		<main ref={paginaRef} className="min-vh-100 pagina-animada detalle-viaje-pagina" style={{ backgroundColor: "#EAF7FA" }}>
 			<div className="container py-4 py-lg-5">
 				<Link to="/trips" className="small text-decoration-none" style={{ color: "#078A9A" }}><i className="fa-solid fa-arrow-left me-2" aria-hidden="true" />Mis viajes</Link>
 
@@ -225,23 +228,23 @@ export const DetalleViaje = () => {
 				</section>
 
 				{/* Calendario del itinerario */}
-				<section className="mb-5" aria-label="Calendario del viaje">
+				<section className="mb-5 planificador-entrada-izquierda" aria-label="Calendario del viaje">
 					<div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4"><div><p className="small text-uppercase fw-semibold mb-2" style={{ color: "#078A9A", letterSpacing: "0.14em" }}>Calendario del viaje</p><h2 className="display-6 mb-0" style={{ ...estiloTitulo, color: "#12343B" }}>Elige un día para planificar</h2></div><span className="small" style={{ color: "#6B8991" }}>Selecciona una fecha para abrir su agenda</span></div>
 					<div className="p-3 p-md-4" style={{ backgroundColor: "#FFFFFF", border: "1px solid #DDECEF" }}>
 						<div className="d-flex justify-content-between align-items-center mb-4"><button type="button" onClick={() => setMesVisible(mesesDelViaje[indiceMesActual - 1])} disabled={indiceMesActual <= 0} className="btn btn-sm rounded-0" aria-label="Mes anterior" style={{ color: "#12343B", border: "1px solid #B8DCE3" }}><i className="fa-solid fa-chevron-left" aria-hidden="true" /></button><h3 className="h4 mb-0 text-center" style={{ ...estiloTitulo, color: "#12343B" }}>{formatearMes(mesActual)}</h3><button type="button" onClick={() => setMesVisible(mesesDelViaje[indiceMesActual + 1])} disabled={indiceMesActual < 0 || indiceMesActual >= mesesDelViaje.length - 1} className="btn btn-sm rounded-0" aria-label="Mes siguiente" style={{ color: "#12343B", border: "1px solid #B8DCE3" }}><i className="fa-solid fa-chevron-right" aria-hidden="true" /></button></div>
 						<div className="d-grid gap-1 mb-2" style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}>{["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((dia) => <div className="col text-center small fw-semibold" style={{ color: "#6B8991" }} key={dia}>{dia}</div>)}</div>
-						<div className="d-grid" style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))", borderTop: "1px solid #B8DCE3", borderLeft: "1px solid #B8DCE3" }}>{celdasCalendario.map((fecha, indice) => { const esDiaDelMes = Boolean(fecha && obtenerClaveMes(fecha) === mesActual); const esDiaDelViaje = Boolean(fecha && dias.includes(fecha)); const esInteractuable = esDiaDelMes && esDiaDelViaje; const numeroDiaViaje = esDiaDelViaje ? dias.indexOf(fecha) + 1 : null; const cantidad = fecha ? (actividadesPorDia.get(fecha) || []).length : 0; return <div key={fecha || `vacio-${indice}`} style={{ borderRight: "1px solid #B8DCE3", borderBottom: "1px solid #B8DCE3" }}><button type="button" disabled={!esInteractuable} onClick={() => esInteractuable && navigate(`/trips/${tripId}/planificar?date=${fecha}`)} className="w-100 d-flex flex-column align-items-center justify-content-center position-relative p-2 p-md-3 rounded-0 text-start" aria-label={fecha ? (esInteractuable ? `Día ${numeroDiaViaje}, ${formatearFecha(fecha)}. Abrir planificador` : formatearFecha(fecha)) : undefined} style={{ minHeight: "6rem", backgroundColor: esDiaDelMes ? (esDiaDelViaje ? "#EAF7FA" : "#FFFFFF") : "#EEF1F2", border: 0, color: esDiaDelMes && esDiaDelViaje ? "#12343B" : "#91AEB5", cursor: esInteractuable ? "pointer" : "default" }}>{fecha && <><span className="small fw-semibold position-absolute top-0 end-0 mt-2 me-2" style={{ color: esDiaDelMes && esDiaDelViaje ? "#078A9A" : "#91AEB5" }}>{esDiaDelViaje ? `Día #${numeroDiaViaje}` : ""}</span><strong className="fs-5 align-self-center">{Number(fecha.slice(-2))}</strong>{cantidad > 0 && <span className="small text-center position-absolute bottom-0 start-50 translate-middle-x mb-2" style={{ color: esDiaDelMes && esDiaDelViaje ? "#078A9A" : "#91AEB5" }}>{cantidad} {cantidad === 1 ? "actividad" : "actividades"}</span>}</>}</button></div>; })}</div>
+						<div className="d-grid" style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))", borderTop: "2px solid #B8DCE3", borderLeft: "2px solid #B8DCE3" }}>{celdasCalendario.map((fecha, indice) => { const esDiaDelMes = Boolean(fecha && obtenerClaveMes(fecha) === mesActual); const esDiaDelViaje = Boolean(fecha && dias.includes(fecha)); const esInteractuable = esDiaDelMes && esDiaDelViaje; const numeroDiaViaje = esDiaDelViaje ? dias.indexOf(fecha) + 1 : null; const cantidad = fecha ? (actividadesPorDia.get(fecha) || []).length : 0; return <div key={fecha || `vacio-${indice}`} style={{ borderRight: "2px solid #B8DCE3", borderBottom: "2px solid #B8DCE3" }}><button type="button" disabled={!esInteractuable} onClick={() => esInteractuable && navigate(`/trips/${tripId}/planificar?date=${fecha}`)} className="w-100 d-flex flex-column align-items-center justify-content-center position-relative p-2 p-md-3 rounded-0 text-start" aria-label={fecha ? (esInteractuable ? `Día ${numeroDiaViaje}, ${formatearFecha(fecha)}. Abrir planificador` : formatearFecha(fecha)) : undefined} style={{ minHeight: "6rem", backgroundColor: esDiaDelMes ? (esDiaDelViaje ? "#EAF7FA" : "#FFFFFF") : "#EEF1F2", border: 0, color: esDiaDelMes && esDiaDelViaje ? "#12343B" : "#91AEB5", cursor: esInteractuable ? "pointer" : "default" }}>{fecha && <><span className="small fw-semibold position-absolute top-0 end-0 mt-2 me-2" style={{ color: esDiaDelMes && esDiaDelViaje ? "#078A9A" : "#91AEB5" }}>{esDiaDelViaje ? `Día #${numeroDiaViaje}` : ""}</span><strong className="fs-5 align-self-center">{Number(fecha.slice(-2))}</strong>{cantidad > 0 && <span className="small text-center position-absolute bottom-0 start-50 translate-middle-x mb-2" style={{ color: esDiaDelMes && esDiaDelViaje ? "#078A9A" : "#91AEB5" }}>{cantidad} {cantidad === 1 ? "actividad" : "actividades"}</span>}</>}</button></div>; })}</div>
 					</div>
 				</section>
 
 				{/* Edición secundaria */}
-				<section className="mb-4 p-4 p-md-5" style={{ backgroundColor: "#FFFFFF", borderTop: "3px solid #DDECEF" }}>
+				<section className="mb-4 p-4 p-md-5 planificador-entrada-izquierda" style={{ backgroundColor: "#FFFFFF", borderTop: "3px solid #DDECEF" }}>
 					<div className="d-flex justify-content-between align-items-center gap-3"><div><p className="small text-uppercase fw-semibold mb-2" style={{ color: "#078A9A", letterSpacing: "0.14em" }}>Datos del viaje</p><h2 className="h4 mb-0" style={{ ...estiloTitulo, color: "#12343B" }}>Información general</h2></div><button type="button" onClick={() => { setEditando((actual) => !actual); setError(""); }} className="btn btn-sm px-3" style={{ backgroundColor: editando ? "#EAF7FA" : "#12343B", color: editando ? "#12343B" : "#FFFFFF", borderRadius: 0 }}>{editando ? "Cerrar edición" : "Editar datos"}</button></div>
 					{editando && <form onSubmit={guardarCambios} className="mt-4 pt-4" style={{ borderTop: "1px solid #DDECEF" }}><div className="row g-3"><div className="col-lg-4"><label htmlFor="trip-name" className="form-label small fw-semibold" style={{ color: "#12343B" }}>Nombre del viaje</label><input id="trip-name" name="name" type="text" required value={formulario.name} onChange={manejarCambio} className="form-control" style={estiloInput} /></div><div className="col-lg-4"><label htmlFor="trip-start-date" className="form-label small fw-semibold" style={{ color: "#12343B" }}>Fecha de inicio</label><input id="trip-start-date" name="start_date" type="date" required value={formulario.start_date || ""} onChange={manejarCambio} className="form-control" style={estiloInput} /></div><div className="col-lg-4"><label htmlFor="trip-end-date" className="form-label small fw-semibold" style={{ color: "#12343B" }}>Fecha de regreso</label><input id="trip-end-date" name="end_date" type="date" required value={formulario.end_date || ""} onChange={manejarCambio} className="form-control" style={estiloInput} /></div></div><button type="submit" className="btn px-4 py-3 mt-4" disabled={guardando} style={{ backgroundColor: "#12343B", color: "#FFFFFF", borderRadius: 0 }}>{guardando ? "Guardando..." : "Guardar cambios"}</button></form>}
 				</section>
 
 				{/* Zona de gestión */}
-				<section className="border-top pt-4" aria-label="Zona de gestión del viaje"><div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3"><div><p className="small text-uppercase fw-semibold mb-2" style={{ color: "#B02A37", letterSpacing: "0.14em" }}>Zona de gestión</p><p className="mb-0" style={{ color: "#6B8991" }}>Eliminar este viaje y sus actividades guardadas.</p></div><button type="button" onClick={() => setModalEliminacionAbierto(true)} disabled={guardando} className="btn btn-outline-danger rounded-0 px-4 py-2">Eliminar viaje</button></div></section>
+				<section className="border-top pt-4 planificador-entrada-izquierda" aria-label="Zona de gestión del viaje"><div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3"><div><p className="small text-uppercase fw-semibold mb-2" style={{ color: "#B02A37", letterSpacing: "0.14em" }}>Zona de gestión</p><p className="mb-0" style={{ color: "#6B8991" }}>Eliminar este viaje y sus actividades guardadas.</p></div><button type="button" onClick={() => setModalEliminacionAbierto(true)} disabled={guardando} className="btn btn-outline-danger rounded-0 px-4 py-2">Eliminar viaje</button></div></section>
 				<ModalConfirmacionEliminacion visible={modalEliminacionAbierto} cargando={guardando} alCancelar={() => setModalEliminacionAbierto(false)} alConfirmar={eliminarViaje} />
 			</div>
 		</main>

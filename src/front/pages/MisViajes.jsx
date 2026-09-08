@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { DropdownSeleccion } from "../components/DropdownSeleccion";
 import { TarjetaViaje } from "../components/TarjetaViaje";
 import { obtenerMensajeErrorBackend } from "../utils/autenticacion.mjs";
 import { ordenarViajes } from "../utils/viajes.mjs";
 import { fetchConSesion } from "../utils/sesion.mjs";
+import { useEntradaPagina } from "../animaciones/useEntradaPagina";
 
 export const MisViajes = () => {
+	const paginaRef = useRef(null);
+	useEntradaPagina(paginaRef);
 	const [viajes, setViajes] = useState([]);
 	const [cargando, setCargando] = useState(true);
 	const [error, setError] = useState("");
@@ -49,7 +52,8 @@ export const MisViajes = () => {
 
 	return (
 		<main
-			className="min-vh-100 py-5"
+			ref={paginaRef}
+			className="min-vh-100 py-5 pagina-animada"
 			style={{ backgroundColor: "#EAF7FA" }}
 		>
 			<div className="container">

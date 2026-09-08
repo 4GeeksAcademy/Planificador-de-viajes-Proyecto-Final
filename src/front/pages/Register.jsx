@@ -33,7 +33,6 @@ export const Register = () => {
 		email: "",
 		password: "",
 	});
-	const [aceptaTerminos, setAceptaTerminos] = useState(false);
 	const [mostrarPassword, setMostrarPassword] = useState(false);
 	const [cargando, setCargando] = useState(false);
 	const [error, setError] = useState("");
@@ -58,11 +57,6 @@ export const Register = () => {
 		);
 		if (errorDatosPersonales) {
 			setError(errorDatosPersonales);
-			return;
-		}
-
-		if (!aceptaTerminos) {
-			setError("Debes aceptar los términos de uso para crear tu cuenta.");
 			return;
 		}
 
@@ -215,20 +209,7 @@ export const Register = () => {
 												<i className={`fa-solid ${mostrarPassword ? "fa-eye-slash" : "fa-eye"}`} aria-hidden="true" />
 											</button>
 										</div>
-									</div>
-									<div className="form-check mb-4">
-										<input
-											id="accept-terms"
-											type="checkbox"
-											checked={aceptaTerminos}
-											onChange={(event) => setAceptaTerminos(event.target.checked)}
-											className="form-check-input"
-										/>
-										<label htmlFor="accept-terms" className="form-check-label small" style={{ color: "#D4F0F5" }}>
-											Acepto los términos de uso de Viajero.
-										</label>
-									</div>
-									<button
+									</div>									<button
 										type="submit"
 										className="btn w-100 py-3"
 										disabled={cargando}

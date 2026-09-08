@@ -1,6 +1,7 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { CargadorMapa } from "../animaciones/CargadorMapa";
+import { useEntradaPagina } from "../animaciones/useEntradaPagina";
 import { MapaCiudad } from "../components/MapaCiudad";
 import { BotonFavoritoLugar } from "../components/BotonFavoritoLugar";
 import { ciudades, LUGAR_ESTILOS } from "../data/ciudades.mjs";
@@ -138,6 +139,8 @@ const unirLugares = (lugaresActuales, lugaresNuevos) => [...new Map([...lugaresA
 const obtenerEtiquetaDia = (dia, dias) => `Día ${dias.indexOf(dia) + 1}`;
 
 export const PlanificadorViaje = () => {
+	const paginaRef = useRef(null);
+	useEntradaPagina(paginaRef);
 	const { tripId } = useParams();
 	const navigate = useNavigate();
 	const [searchParams, setSearchParams] = useSearchParams();
@@ -160,6 +163,7 @@ export const PlanificadorViaje = () => {
 	const [modalActividadAbierta, setModalActividadAbierta] = useState(false);
 	const [selectorHoraAbierto, setSelectorHoraAbierto] = useState(false);
 	const [actividadEditando, setActividadEditando] = useState(null);
+	const [actividadModalEditando, setActividadModalEditando] = useState(null);
 	const [horaEdicion, setHoraEdicion] = useState("");
 	const [cargando, setCargando] = useState(true);
 	const [estadoLugares, setEstadoLugares] = useState("idle");
@@ -178,6 +182,7 @@ export const PlanificadorViaje = () => {
 	const direccionParaGuardar = direccionSeleccionada?.address || lugarSeleccionado?.address || "";
 	const direccionDelLugar = direccionParaGuardar || "Dirección no disponible";
 	const lugarParaGuardar = lugarSeleccionado ? { ...lugarSeleccionado, address: direccionParaGuardar } : null;
+	const actividadEnEdicion = actividades.find((actividad) => actividad.id === actividadModalEditando);
 
 	useEffect(() => {
 		let activa = true;
@@ -356,8 +361,29 @@ export const PlanificadorViaje = () => {
 	};
 
 	const abrirModalActividad = () => {
+		setActividadModalEditando(null);
+		setActividadEditando(null);
 		setHora("");
 		setNotaActividad("");
+		setSelectorHoraAbierto(false);
+		setError("");
+		setModalActividadAbierta(true);
+	};
+
+	const abrirModalEdicionActividad = (actividad) => {
+		setActividadModalEditando(actividad.id);
+		setLugarSeleccionado({
+			id: actividad.place_id,
+			name: actividad.name,
+			category: actividad.place_category,
+			address: actividad.place_address,
+			city: actividad.place_city,
+			latitude: actividad.place_latitude,
+			longitude: actividad.place_longitude,
+			style: LUGAR_ESTILOS[actividad.place_category] || LUGAR_ESTILOS.attraction,
+		});
+		setHora(actividad.time ? actividad.time.slice(0, 5) : "");
+		setNotaActividad(actividad.notes || "");
 		setSelectorHoraAbierto(false);
 		setError("");
 		setModalActividadAbierta(true);
@@ -374,8 +400,11 @@ export const PlanificadorViaje = () => {
 		setError("");
 		setGuardando(true);
 		try {
-			const respuesta = await fetchConSesion(`${import.meta.env.VITE_BACKEND_URL}/api/destinations/${destino.id}/activities`, {
-				method: "POST",
+			const editando = Boolean(actividadEnEdicion);
+			const respuesta = await fetchConSesion(editando
+				? `${import.meta.env.VITE_BACKEND_URL}/api/activities/${actividadEnEdicion.id}`
+				: `${import.meta.env.VITE_BACKEND_URL}/api/destinations/${destino.id}/activities`, {
+				method: editando ? "PUT" : "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					name: lugarParaGuardar.name,
@@ -393,9 +422,14 @@ export const PlanificadorViaje = () => {
 			});
 			const datos = await respuesta.json();
 			if (!respuesta.ok) throw new Error(obtenerMensajeErrorBackend(datos, "No fue posible agregar el lugar al día."));
-			setActividades((actuales) => [...actuales, datos]);
+			setActividades((actuales) => editando
+				? actuales.map((actual) => actual.id === datos.id ? datos : actual)
+				: [...actuales, datos]);
 			setHora("");
 			setNotaActividad("");
+			setActividadEditando(null);
+			setActividadModalEditando(null);
+			setLugarSeleccionado(null);
 			setModalActividadAbierta(false);
 		} catch (errorDeRed) {
 			setError(errorDeRed.message || "No fue posible agregar el lugar.");
@@ -437,7 +471,7 @@ export const PlanificadorViaje = () => {
 	if (error && !viaje) return <main className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: "#EAF7FA" }}><div className="alert alert-danger rounded-0">{error}</div></main>;
 
 	return (
-		<main className="min-vh-100" style={{ backgroundColor: "#EAF7FA" }}>
+		<main ref={paginaRef} className="min-vh-100 pagina-animada" style={{ backgroundColor: "#EAF7FA" }}>
 			<div className="container-fluid px-3 px-md-4 py-3" style={{ maxWidth: "1600px" }}>
 				{/* Cabecera del workspace */}
 				<header className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-3">
@@ -461,30 +495,32 @@ export const PlanificadorViaje = () => {
 				) : (
 					<>
 						{/* Navegación semanal */}
-						<section className="p-3 p-md-4 mb-3" style={{ backgroundColor: "#12343B", color: "#FFFFFF" }}>
+						<section className="p-3 p-md-4 mb-3 planificador-entrada-izquierda" style={{ backgroundColor: "#12343B", color: "#FFFFFF" }}>
 							<div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
-								<div><p className="small text-uppercase fw-semibold mb-1" style={{ color: "#8CE3ED", letterSpacing: "0.12em" }}>Navegación del viaje</p><h2 className="h4 mb-0" style={{ fontFamily: "Fraunces, Georgia, serif" }}>Semana {semanaActiva + 1} de {semanas.length}</h2><span className="small" style={{ color: "#D4F0F5" }}>{formatearSemana(semanaVisible)}</span></div>
+								<div><h2 className="h4 mb-0" style={{ fontFamily: "Fraunces, Georgia, serif" }}>Semana {semanaActiva + 1} de {semanas.length}</h2><span className="small" style={{ color: "#D4F0F5" }}>{formatearSemana(semanaVisible)}</span></div>
 								<div className="d-flex flex-wrap align-items-center justify-content-md-end gap-2"><label htmlFor="saltar-fecha" className="small text-uppercase fw-semibold mb-0 d-flex align-items-center gap-2" style={{ color: "#D4F0F5", letterSpacing: "0.08em" }}><i className="fa-regular fa-calendar" aria-hidden="true" />Ir a fecha</label><input id="saltar-fecha" type="date" min={dias[0]} max={dias[dias.length - 1]} value={dias.includes(fechaSolicitada) ? fechaSolicitada : diaActivo} onChange={saltarAFecha} className="form-control form-control-sm rounded-0" style={{ width: "9.5rem", minHeight: "2.25rem", backgroundColor: "#EAF7FA", color: "#12343B", border: "1px solid #8CE3ED", fontWeight: 600, colorScheme: "light" }} /><button type="button" onClick={() => cambiarSemana(-1)} disabled={semanaActiva === 0} className="btn btn-sm" aria-label="Semana anterior" style={{ color: "#FFFFFF", border: "1px solid #8CE3ED", borderRadius: 0 }}><i className="fa-solid fa-chevron-left" aria-hidden="true" /></button><button type="button" onClick={() => cambiarSemana(1)} disabled={semanaActiva === semanas.length - 1} className="btn btn-sm" aria-label="Semana siguiente" style={{ color: "#FFFFFF", border: "1px solid #8CE3ED", borderRadius: 0 }}><i className="fa-solid fa-chevron-right" aria-hidden="true" /></button></div>
 							</div>
-							<div className="row g-2">{semanaVisible.map((dia) => { const cantidad = actividades.filter((actividad) => actividad.date === dia).length; const activo = dia === diaActivo; return <div className="col" key={dia}><button type="button" onClick={() => seleccionarDia(dia)} className="w-100 text-start p-2 p-md-3 h-100" aria-pressed={activo} style={{ minHeight: "5.2rem", backgroundColor: activo ? "#28C3D4" : "rgba(255, 255, 255, 0.07)", color: activo ? "#12343B" : "#FFFFFF", border: activo ? "2px solid #28C3D4" : "1px solid rgba(212, 240, 245, 0.3)", borderRadius: 0 }}><span className="d-block small text-uppercase fw-semibold">{formatearDia(dia).split(" ")[0]}</span><strong className="d-block fs-5">{new Date(`${dia}T12:00:00`).getDate()}</strong><span className="d-block small mt-1" style={{ opacity: 0.8 }}>{cantidad ? `${cantidad} lugares` : "Libre"}</span></button></div>; })}</div>
+							<div className="row g-2">{semanaVisible.map((dia) => { const cantidad = actividades.filter((actividad) => actividad.date === dia).length; const activo = dia === diaActivo; return <div className="col" key={dia}><button type="button" onClick={() => seleccionarDia(dia)} className="w-100 text-start p-2 p-md-3 h-100" aria-pressed={activo} style={{ minHeight: "5.2rem", backgroundColor: activo ? "#28C3D4" : "rgba(255, 255, 255, 0.07)", color: activo ? "#12343B" : "#FFFFFF", border: activo ? "3px solid #28C3D4" : "2px solid rgba(212, 240, 245, 0.5)", borderRadius: 0 }}><span className="d-block small text-uppercase fw-semibold">{formatearDia(dia).split(" ")[0]}</span><strong className="d-block fs-5">{new Date(`${dia}T12:00:00`).getDate()}</strong><span className="d-block small mt-1" style={{ opacity: 0.8 }}>{cantidad ? `${cantidad} lugares` : "Libre"}</span></button></div>; })}</div>
 						</section>
 
 						<div className="row g-3 g-xl-4">
 							{/* Exploración del mapa */}
-							<section className="col-12 col-xl-8">
+							<section className="col-12 col-xl-8 planificador-entrada-izquierda">
 								<div className="p-3 p-md-4 mb-3" style={{ backgroundColor: "#FFFFFF", border: "1px solid #DDECEF" }}>
-									<div className="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3"><div><p className="small text-uppercase fw-semibold mb-1" style={{ color: "#078A9A", letterSpacing: "0.12em" }}>Explorar lugares</p><h2 className="h4 mb-0" style={{ color: "#12343B", fontFamily: "Fraunces, Georgia, serif" }}>¿Qué quieres explorar?</h2></div><div className="position-relative" style={{ minWidth: "min(100%, 18rem)" }}><i className="fa-solid fa-magnifying-glass position-absolute" aria-hidden="true" style={{ left: "0.8rem", top: "0.65rem", color: "#078A9A" }} /><input type="search" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Buscar museo, café, parque..." aria-label="Buscar lugares" className="form-control rounded-0 ps-5" style={{ borderColor: "#B8DCE3", color: "#12343B" }} /></div></div>
-									<div className="d-flex gap-2 overflow-auto pb-1" role="group" aria-label="Categorías de lugares">{filtrosCategoria.map((filtro) => <button type="button" key={filtro.clave} onClick={() => setCategoriaActiva(filtro.clave)} aria-pressed={categoriaActiva === filtro.clave} className="btn btn-sm text-nowrap rounded-0" style={{ backgroundColor: categoriaActiva === filtro.clave ? "#12343B" : "#EAF7FA", color: categoriaActiva === filtro.clave ? "#FFFFFF" : "#12343B", border: "1px solid #B8DCE3" }}><i className={`fa-solid ${filtro.icono} me-2`} aria-hidden="true" />{filtro.etiqueta}</button>)}</div>
+									<div className="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3 planificador-exploracion-cabecera"><div><h2 className="h4 mb-0" style={{ color: "#12343B", fontFamily: "Fraunces, Georgia, serif" }}>¿Qué quieres explorar?</h2></div><div className="position-relative planificador-busqueda" style={{ minWidth: "min(100%, 18rem)" }}><i className="fa-solid fa-magnifying-glass position-absolute" aria-hidden="true" style={{ left: "0.75rem", top: "0.7rem", color: "#078A9A" }} /><input type="search" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Buscar museo, café, parque..." aria-label="Buscar lugares" className="form-control rounded-0 ps-5" style={{ borderColor: "#B8DCE3", color: "#12343B" }} />
+									<div className="d-flex gap-2 overflow-auto pb-1 planificador-categorias" style={{ marginTop: "0.85rem" }} role="group" aria-label="Categorías de lugares">{filtrosCategoria.map((filtro) => <button type="button" key={filtro.clave} onClick={() => setCategoriaActiva(filtro.clave)} aria-pressed={categoriaActiva === filtro.clave} className="btn btn-sm text-nowrap rounded-0" style={{ backgroundColor: categoriaActiva === filtro.clave ? "#12343B" : "#EAF7FA", color: categoriaActiva === filtro.clave ? "#FFFFFF" : "#12343B", border: "1px solid #B8DCE3" }}><i className={`fa-solid ${filtro.icono} me-2`} aria-hidden="true" />{filtro.etiqueta}</button>)}</div>
 									{estadoLugares === "loading" && <p className="small mb-0 mt-3" role="status" style={{ color: "#078A9A" }}><i className="fa-solid fa-spinner fa-spin me-2" aria-hidden="true" />Cargando lugares...</p>}
 								</div>
-								<div className="explorar-mapa-wrapper" style={{ height: "min(68vh, 680px)", minHeight: "430px" }}><MapaCiudad altura="100%" ciudad={ciudad} lugares={lugaresVisibles} lugarSeleccionado={lugarSeleccionado} onLugarClick={setLugarSeleccionado} onClusterClick={() => setLugarSeleccionado(null)} />{estadoLugares === "loading" && !respuestaCorrectaRecibida && <CargadorMapa />}{lugarSeleccionado && <article className="explorar-lugar-detalle" style={{ bottom: "1rem", left: "1rem", width: "min(34rem, calc(100% - 2rem))" }}><div className="explorar-lugar-detalle-contenido"><p className="small text-uppercase fw-semibold mb-1" style={{ color: lugarSeleccionado.style.color, letterSpacing: "0.1em" }}>{lugarSeleccionado.style.label}</p><h3 className="h5 mb-2" style={{ color: "#12343B" }}>{lugarSeleccionado.name}</h3><p className="small mb-3" style={{ color: "#6B8991" }}>{estadoDireccion === "loading" ? "Buscando dirección..." : direccionDelLugar}</p><div className="d-flex flex-column flex-sm-row align-items-sm-center gap-2"><button type="button" onClick={abrirModalActividad} disabled={guardando} className="btn btn-sm px-3" style={{ backgroundColor: "#12343B", color: "#FFFFFF", borderRadius: 0 }}>Añadir al {obtenerEtiquetaDia(diaActivo, dias)}</button></div><div className="mt-3 pt-3" style={{ borderTop: "1px solid #DDECEF" }}><BotonFavoritoLugar lugar={lugarParaGuardar} ciudad={ciudad} compacto /></div></div><button type="button" onClick={() => setLugarSeleccionado(null)} className="btn-close" aria-label="Cerrar información del lugar" /></article>}</div>
+							</div>
+							<div className="explorar-mapa-wrapper planificador-mapa-wrapper" style={{ height: "min(68vh, 680px)", minHeight: "430px" }}><MapaCiudad altura="100%" ciudad={ciudad} lugares={lugaresVisibles} lugarSeleccionado={lugarSeleccionado} onLugarClick={setLugarSeleccionado} onClusterClick={() => setLugarSeleccionado(null)} />{estadoLugares === "loading" && !respuestaCorrectaRecibida && <CargadorMapa />}{lugarSeleccionado && <article className="explorar-lugar-detalle planificador-lugar-seleccionado" style={{ bottom: "1rem", left: "1rem", width: "min(34rem, calc(100% - 2rem))" }}><div className="explorar-lugar-detalle-contenido"><p className="small text-uppercase fw-semibold mb-1" style={{ color: lugarSeleccionado.style.color, letterSpacing: "0.1em" }}>{lugarSeleccionado.style.label}</p><h3 className="h5 mb-2" style={{ color: "#12343B" }}>{lugarSeleccionado.name}</h3><p className="small mb-3" style={{ color: "#6B8991" }}>{estadoDireccion === "loading" ? "Buscando dirección..." : direccionDelLugar}</p><div className="d-flex flex-column flex-sm-row align-items-sm-center gap-2"><button type="button" onClick={abrirModalActividad} disabled={guardando} className="btn btn-sm px-3" style={{ backgroundColor: "#12343B", color: "#FFFFFF", borderRadius: 0 }}>Añadir al {obtenerEtiquetaDia(diaActivo, dias)}</button></div><div className="mt-3 pt-3" style={{ borderTop: "1px solid #DDECEF" }}><BotonFavoritoLugar lugar={lugarParaGuardar} ciudad={ciudad} compacto /></div></div><button type="button" onClick={() => setLugarSeleccionado(null)} className="btn-close planificador-cerrar-lugar" aria-label="Cerrar información del lugar" /></article>}</div>
+							</div>
 							</section>
 
 							{/* Agenda del día */}
-							<section className="col-12 col-xl-4">
+							<section className="col-12 col-xl-4 planificador-entrada-derecha">
 								<div className="p-3 p-md-4 h-100" style={{ backgroundColor: "#FFFFFF", border: "1px solid #DDECEF" }}>
 									<div className="d-flex justify-content-between align-items-start gap-2 mb-4"><div><p className="small text-uppercase fw-semibold mb-2" style={{ color: "#078A9A", letterSpacing: "0.12em" }}>{obtenerEtiquetaDia(diaActivo, dias)}</p><h2 className="h4 mb-1" style={{ color: "#12343B", fontFamily: "Fraunces, Georgia, serif" }}>{formatearDia(diaActivo)}</h2><span className="small" style={{ color: "#6B8991" }}>{actividadesDelDia.length} {actividadesDelDia.length === 1 ? "actividad" : "actividades"}</span></div><i className="fa-regular fa-calendar" style={{ color: "#28C3D4", fontSize: "1.35rem" }} aria-hidden="true" /></div>
-									{actividadesDelDia.length === 0 ? <div className="py-4" style={{ borderTop: "1px solid #DDECEF" }}><p className="mb-2" style={{ color: "#6B8991" }}>Este día todavía está libre.</p><small style={{ color: "#6B8991" }}>Selecciona un lugar en el mapa para comenzar.</small></div> : <ul className="list-unstyled mb-0">{actividadesDelDia.map((actividad) => <li key={actividad.id} className="py-3" style={{ borderTop: "1px solid #DDECEF" }}>{actividadEditando === actividad.id ? <div><strong className="d-block mb-2" style={{ color: "#12343B" }}>{actividad.name}</strong><div className="d-flex gap-2"><input aria-label={`Editar hora de ${actividad.name}`} type="time" value={horaEdicion} onChange={(evento) => setHoraEdicion(evento.target.value)} className="form-control form-control-sm rounded-0" /><button type="button" onClick={() => guardarHoraActividad(actividad)} className="btn btn-sm" style={{ backgroundColor: "#12343B", color: "#FFFFFF", borderRadius: 0 }}>Guardar</button><button type="button" onClick={() => setActividadEditando(null)} className="btn btn-sm btn-light rounded-0">Cancelar</button></div></div> : <div className="d-flex justify-content-between gap-2"><div><strong className="d-block" style={{ color: "#12343B" }}>{actividad.name}</strong><small style={{ color: "#078A9A" }}>{formatearHora(actividad.time)}</small>{actividad.place_address && <small className="d-block mt-2" style={{ color: "#6B8991" }}>{actividad.place_address}</small>}{actividad.notes && <small className="d-block mt-2" style={{ color: "#456B75", overflowWrap: "anywhere" }}><strong>Nota:</strong> {truncarNota(actividad.notes)}</small>}</div><div className="d-flex gap-2"><button type="button" onClick={() => { setActividadEditando(actividad.id); setHoraEdicion(actividad.time ? actividad.time.slice(0, 5) : ""); }} className="btn btn-sm p-0" aria-label={`Editar hora de ${actividad.name}`} style={{ color: "#078A9A" }}><i className="fa-solid fa-pen" aria-hidden="true" /></button><button type="button" onClick={() => eliminarActividad(actividad.id)} className="btn btn-sm p-0" aria-label={`Eliminar ${actividad.name}`} style={{ color: "#B02A37" }}><i className="fa-solid fa-trash" aria-hidden="true" /></button></div></div>}</li>)}</ul>}
+									{actividadesDelDia.length === 0 ? <div className="py-4" style={{ borderTop: "1px solid #DDECEF" }}><p className="mb-2" style={{ color: "#6B8991" }}>Este día todavía está libre.</p><small style={{ color: "#6B8991" }}>Selecciona un lugar en el mapa para comenzar.</small></div> : <ul className="list-unstyled mb-0">{actividadesDelDia.map((actividad) => <li key={actividad.id} className="py-3" style={{ borderTop: "1px solid #DDECEF" }}>{actividadEditando === actividad.id ? <div><strong className="d-block mb-2" style={{ color: "#12343B" }}>{actividad.name}</strong><div className="d-flex gap-2"><input aria-label={`Editar hora de ${actividad.name}`} type="time" value={horaEdicion} onChange={(evento) => setHoraEdicion(evento.target.value)} className="form-control form-control-sm rounded-0" /><button type="button" onClick={() => guardarHoraActividad(actividad)} className="btn btn-sm" style={{ backgroundColor: "#12343B", color: "#FFFFFF", borderRadius: 0 }}>Guardar</button><button type="button" onClick={() => setActividadEditando(null)} className="btn btn-sm btn-light rounded-0">Cancelar</button></div></div> : <div className="d-flex justify-content-between gap-2"><div><strong className="d-block" style={{ color: "#12343B" }}>{actividad.name}</strong><small style={{ color: "#078A9A" }}>{formatearHora(actividad.time)}</small>{actividad.place_address && <small className="d-block mt-2" style={{ color: "#6B8991" }}>{actividad.place_address}</small>}{actividad.notes && <small className="d-block mt-2" style={{ color: "#456B75", overflowWrap: "anywhere" }}><strong>Nota:</strong> {truncarNota(actividad.notes)}</small>}</div><div className="d-flex gap-2"><button type="button" onClick={() => abrirModalEdicionActividad(actividad)} className="btn btn-sm p-0" aria-label={`Editar actividad de ${actividad.name}`} style={{ color: "#078A9A" }}><i className="fa-solid fa-pen" aria-hidden="true" /></button><button type="button" onClick={() => eliminarActividad(actividad.id)} className="btn btn-sm p-0" aria-label={`Eliminar ${actividad.name}`} style={{ color: "#B02A37" }}><i className="fa-solid fa-trash" aria-hidden="true" /></button></div></div>}</li>)}</ul>}
 								</div>
 							</section>
 						</div>
@@ -494,14 +530,14 @@ export const PlanificadorViaje = () => {
 			{modalActividadAbierta && lugarParaGuardar && <div role="presentation" onClick={(evento) => { if (evento.target === evento.currentTarget) cerrarModalActividad(); }} style={{ position: "fixed", inset: 0, zIndex: 2000, backgroundColor: "rgba(18, 52, 59, 0.58)", display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
 				<section role="dialog" aria-modal="true" aria-labelledby="modal-actividad-titulo" className="w-100" style={{ maxWidth: selectorHoraAbierto ? "27rem" : "34rem", backgroundColor: "#FFFFFF", color: "#12343B", boxShadow: "0 1rem 3rem rgba(18, 52, 59, 0.2)" }}>
 					<div className="d-flex justify-content-between align-items-start gap-3 p-4" style={{ borderBottom: "1px solid #DDECEF" }}>
-						<div><p className="small text-uppercase fw-semibold mb-2" style={{ color: "#078A9A", letterSpacing: "0.12em" }}>{selectorHoraAbierto ? "Elegir horario" : "Nueva actividad"}</p><h2 id="modal-actividad-titulo" className="h4 mb-1" style={{ fontFamily: "Fraunces, Georgia, serif" }}>{selectorHoraAbierto ? "Selecciona la hora" : `Añadir al ${obtenerEtiquetaDia(diaActivo, dias)}`}</h2>{!selectorHoraAbierto && <p className="small mb-0" style={{ color: "#6B8991" }}>{lugarParaGuardar.name}</p>}</div>
+						<div><p className="small text-uppercase fw-semibold mb-2" style={{ color: "#078A9A", letterSpacing: "0.12em" }}>{actividadModalEditando ? "Editar actividad" : "Nueva actividad"}</p><h2 id="modal-actividad-titulo" className="h4 mb-1" style={{ fontFamily: "Fraunces, Georgia, serif" }}>{selectorHoraAbierto ? "Selecciona la hora" : actividadModalEditando ? "Editar actividad" : `Añadir al ${obtenerEtiquetaDia(diaActivo, dias)}`}</h2>{!selectorHoraAbierto && <p className="small mb-0" style={{ color: "#6B8991" }}>{lugarParaGuardar.name}</p>}</div>
 						<button type="button" onClick={selectorHoraAbierto ? () => setSelectorHoraAbierto(false) : cerrarModalActividad} disabled={guardando} className="btn-close" aria-label={selectorHoraAbierto ? "Cancelar selección de horario" : "Cerrar ventana de actividad"} />
 					</div>
 					{selectorHoraAbierto ? <Suspense fallback={<div className="p-4">Cargando selector...</div>}><div className="p-4"><SelectorHorarioMUI value={hora} onSave={(horaConfirmada) => { setHora(horaConfirmada); setSelectorHoraAbierto(false); }} onCancel={() => setSelectorHoraAbierto(false)} /></div></Suspense> : <div className="p-4">
 						<p className="small mb-4" style={{ color: "#6B8991" }}><i className="fa-solid fa-location-dot me-2" aria-hidden="true" />{direccionDelLugar}</p>
 						<div className="mb-3"><span id="hora-actividad-label" className="form-label small text-uppercase fw-semibold d-block" style={{ color: "#456B75", letterSpacing: "0.08em" }}>Horario</span><button type="button" onClick={() => setSelectorHoraAbierto(true)} className="btn w-100 rounded-0 d-flex align-items-center justify-content-between text-start px-3" aria-labelledby="hora-actividad-label" style={{ minHeight: "3rem", color: hora ? "#12343B" : "#6B8991", border: "1px solid #B8DCE3", backgroundColor: "#FFFFFF", fontSize: "1.05rem" }}><span>{hora ? hora.slice(0, 5) : "--:--"}</span><i className="fa-solid fa-pen" aria-hidden="true" /></button><small className="d-block mt-2" style={{ color: "#6B8991" }}>Pulsa la hora o el lápiz para abrir el reloj.</small></div>
 						<div className="mb-4"><label htmlFor="nota-actividad" className="form-label small text-uppercase fw-semibold" style={{ color: "#456B75", letterSpacing: "0.08em" }}>Nota <span className="text-lowercase fw-normal" style={{ color: "#91AEB5", letterSpacing: 0 }}>(opcional)</span></label><textarea id="nota-actividad" value={notaActividad} onChange={(evento) => setNotaActividad(evento.target.value)} className="form-control rounded-0" rows="3" placeholder="Ej. Reservar mesa o visitar al atardecer." /></div>
-						<div className="d-flex justify-content-end gap-2"><button type="button" onClick={cerrarModalActividad} disabled={guardando} className="btn btn-sm px-3 rounded-0" style={{ color: "#456B75", border: "1px solid #B8DCE3" }}>Cancelar</button><button type="button" onClick={agregarLugarAlDia} disabled={guardando} className="btn btn-sm px-3 rounded-0" style={{ backgroundColor: "#12343B", color: "#FFFFFF" }}>{guardando ? "Guardando..." : "Guardar actividad"}</button></div>
+						<div className="d-flex justify-content-end gap-2"><button type="button" onClick={cerrarModalActividad} disabled={guardando} className="btn btn-sm px-3 rounded-0" style={{ color: "#456B75", border: "1px solid #B8DCE3" }}>Cancelar</button><button type="button" onClick={agregarLugarAlDia} disabled={guardando} className="btn btn-sm px-3 rounded-0" style={{ backgroundColor: "#12343B", color: "#FFFFFF" }}>{guardando ? "Guardando..." : actividadModalEditando ? "Guardar cambios" : "Guardar actividad"}</button></div>
 					</div>}
 				</section>
 			</div>}

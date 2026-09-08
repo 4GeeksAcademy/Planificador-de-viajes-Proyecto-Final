@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { CargadorMapa } from "../animaciones/CargadorMapa";
+import { useEntradaPagina } from "../animaciones/useEntradaPagina";
 import { MapaCiudad } from "../components/MapaCiudad";
 import { BotonFavoritoLugar } from "../components/BotonFavoritoLugar";
 import { LUGAR_ESTILOS, obtenerCiudad } from "../data/ciudades.mjs";
@@ -87,6 +88,8 @@ const perteneceCategoria = (lugar, categoria) => {
 };
 
 export const Ciudad = () => {
+	const paginaRef = useRef(null);
+	useEntradaPagina(paginaRef);
 	const { citySlug } = useParams();
 	const ciudad = obtenerCiudad(citySlug);
 	const [lugares, setLugares] = useState([]);
@@ -179,7 +182,8 @@ export const Ciudad = () => {
 	}
 
 	return <main
-		className="min-vh-100"
+		ref={paginaRef}
+		className="min-vh-100 pagina-animada"
 		style={{
 			backgroundImage: `linear-gradient(90deg, rgba(8, 39, 45, 0.96) 0%, rgba(8, 39, 45, 0.82) 38%, rgba(8, 39, 45, 0.3) 66%, rgba(8, 39, 45, 0.62) 100%), url(${ciudad.image})`,
 			backgroundPosition: "center",

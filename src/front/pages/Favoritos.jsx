@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { fetchConSesion } from "../utils/sesion.mjs";
+import { useEntradaPagina } from "../animaciones/useEntradaPagina";
 import { obtenerMensajeErrorBackend } from "../utils/autenticacion.mjs";
 import { ciudades } from "../data/ciudades.mjs";
 
@@ -16,6 +17,8 @@ const formatearFecha = (fecha) => {
 const obtenerCiudad = (favorito) => favorito.place?.city || "Otros lugares";
 
 export const Favoritos = () => {
+	const paginaRef = useRef(null);
+	useEntradaPagina(paginaRef);
 	const navigate = useNavigate();
 	const [favoritos, setFavoritos] = useState([]);
 	const [ciudadActiva, setCiudadActiva] = useState("");
@@ -100,7 +103,7 @@ export const Favoritos = () => {
 	}
 
 	return (
-		<main className="min-vh-100 py-4 py-lg-5" style={{ backgroundColor: "#EAF7FA" }}>
+		<main ref={paginaRef} className="min-vh-100 py-4 py-lg-5 pagina-animada" style={{ backgroundColor: "#EAF7FA" }}>
 			<div className="container-fluid px-3 px-md-4 px-xl-5" style={{ maxWidth: "1440px" }}>
 				<header className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-4 mb-4">
 					<div>
@@ -127,9 +130,8 @@ export const Favoritos = () => {
 					</section>
 				) : (
 					<div className="row g-4 align-items-stretch">
-						<aside className="col-12 col-lg-4">
+						<aside className="col-12 col-lg-4 planificador-entrada-izquierda">
 							<div className="h-100 p-4 p-md-5" style={{ backgroundColor: "#12343B", color: "#FFFFFF" }}>
-								<p className="text-uppercase small fw-semibold mb-2" style={{ color: "#8CE3ED", letterSpacing: "0.14em" }}>Organiza tu inspiración</p>
 								<h2 className="h2 mb-4" style={{ fontFamily: "Fraunces, Georgia, serif", fontWeight: 600 }}>Elige una ciudad</h2>
 								<div className="d-flex flex-column" role="tablist" aria-label="Ciudades con favoritos">
 									{ciudades.map((ciudad) => {
@@ -153,11 +155,10 @@ export const Favoritos = () => {
 							</div>
 						</aside>
 
-						<section className="col-12 col-lg-8" aria-labelledby="ciudad-favoritos-titulo">
+						<section className="col-12 col-lg-8 planificador-entrada-derecha" aria-labelledby="ciudad-favoritos-titulo">
 							<div className="h-100 p-4 p-md-5" style={{ backgroundColor: "#FFFFFF" }}>
 								<div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4 pb-4" style={{ borderBottom: "1px solid #DDECEF" }}>
 									<div>
-										<p className="small text-uppercase fw-semibold mb-2" style={{ color: "#078A9A", letterSpacing: "0.14em" }}>Selección actual</p>
 										<h2 id="ciudad-favoritos-titulo" className="display-6 mb-1" style={{ color: "#12343B", fontFamily: "Fraunces, Georgia, serif", fontWeight: 600 }}>{ciudadActiva}</h2>
 										<p className="mb-0" style={{ color: "#6B8991" }}>{ciudadSeleccionada?.country || ""} · {favoritosVisibles.length} {favoritosVisibles.length === 1 ? "lugar guardado" : "lugares guardados"}</p>
 									</div>

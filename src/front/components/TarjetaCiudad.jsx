@@ -1,9 +1,22 @@
+import { useRef } from "react";
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
+import { useRevealOnScroll } from "../animaciones/useRevealOnScroll";
 
-export const TarjetaCiudad = ({ ciudad, seleccionada, onSeleccionar }) => (
-	<article className={`explorar-ciudad-card ${seleccionada ? "explorar-ciudad-card-activa" : ""}`}>
-		<button
+export const TarjetaCiudad = ({ ciudad, indice = 0, seleccionada, onSeleccionar }) => {
+	const tarjetaRef = useRef(null);
+	useRevealOnScroll(tarjetaRef, "left", {
+		distance: 90,
+		duration: 0.8,
+		delay: indice * 0.08,
+		start: "top 92%",
+	});
+
+	return (
+	<article
+		ref={tarjetaRef}
+		className={`explorar-ciudad-card ${seleccionada ? "explorar-ciudad-card-activa" : ""}`}
+	>		<button
 			aria-label={`Seleccionar ${ciudad.city}`}
 			aria-pressed={seleccionada}
 			className="explorar-ciudad-imagen-boton"
@@ -41,9 +54,11 @@ export const TarjetaCiudad = ({ ciudad, seleccionada, onSeleccionar }) => (
 			</Link>
 		</div>
 	</article>
-);
+	);
+};
 
 TarjetaCiudad.propTypes = {
+	indice: PropTypes.number,
 	ciudad: PropTypes.shape({
 		slug: PropTypes.string.isRequired,
 		city: PropTypes.string.isRequired,

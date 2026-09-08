@@ -53,6 +53,12 @@
 	border: 1px solid #D4F0F5;
 	border-radius: 0;
 	color: #12343B;
+	transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.explorar-ciudad-card:hover {
+	border-color: #28C3D4;
+	box-shadow: 0 0.55rem 1.1rem rgba(18, 52, 59, 0.16);
 }
 
 .explorar-ciudad-imagen-boton {

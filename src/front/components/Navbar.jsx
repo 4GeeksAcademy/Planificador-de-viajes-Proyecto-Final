@@ -349,6 +349,7 @@ export const Navbar = () => {
 											<Link
 												to="/login"
 												className="dropdown-item"
+												onClick={cerrarMenu}
 											>
 												Iniciar sesión
 											</Link>
@@ -357,6 +358,7 @@ export const Navbar = () => {
 											<Link
 												to="/register"
 												className="dropdown-item"
+												onClick={cerrarMenu}
 											>
 												Registrarse
 											</Link>

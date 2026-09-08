@@ -764,6 +764,29 @@ def update_admin_user(user_id):
     return jsonify({"user": user.serialize(), "message": "Usuario actualizado correctamente"}), 200
 
 
+@api.route('/admin/trips', methods=['GET'])
+@admin_required
+def get_admin_trips():
+    trips = Trip.query.order_by(Trip.start_date.desc(), Trip.id.desc()).all()
+    return jsonify({"trips": [{
+        **trip.serialize(),
+        "username": trip.user.username if trip.user else "Sin usuario",
+        "destinations": len(trip.destinations),
+    } for trip in trips]}), 200
+
+
+@api.route('/admin/favorites', methods=['GET'])
+@admin_required
+def get_admin_favorites():
+    favorites = Favorite.query.order_by(Favorite.created_at.desc(), Favorite.id.desc()).all()
+    return jsonify({"favorites": [{
+        **favorite.serialize(),
+        "username": favorite.user.username if favorite.user else "Sin usuario",
+        "place_name": favorite.place.name if favorite.place else "Lugar eliminado",
+        "place_city": favorite.place.city if favorite.place else "—",
+    } for favorite in favorites]}), 200
+
+
 @api.route('/admin/users/<int:user_id>', methods=['DELETE'])
 @admin_required
 def delete_admin_user(user_id):

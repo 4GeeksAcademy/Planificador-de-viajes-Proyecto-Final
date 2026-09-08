@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { CargadorMapa } from "../animaciones/CargadorMapa";
+import { useEntradaPagina } from "../animaciones/useEntradaPagina";
 import { MapaCiudad } from "../components/MapaCiudad";
 import { BotonFavoritoLugar } from "../components/BotonFavoritoLugar";
 import { TarjetaCiudad } from "../components/TarjetaCiudad";
@@ -145,6 +146,8 @@ const unirLugares = (lugaresActuales, lugaresNuevos) => {
 };
 
 export const Explorar = () => {
+  const paginaRef = useRef(null);
+  useEntradaPagina(paginaRef);
   const [ciudadSeleccionada, setCiudadSeleccionada] = useState(null);
   const [lugares, setLugares] = useState([]);
   const [lugarSeleccionado, setLugarSeleccionado] = useState(null);
@@ -262,7 +265,7 @@ export const Explorar = () => {
   const ciudadMostrada = direccionSeleccionada?.city || lugarSeleccionado?.city;
 
   return (
-    <main className="explorar-page" style={{ backgroundColor: "#EAF7FA" }}>
+    <main ref={paginaRef} className="explorar-page pagina-animada" style={{ backgroundColor: "#EAF7FA" }}>
       <section className="explorar-panel container-xl py-4 py-lg-5">
         <div className="row g-4 align-items-start">
           <aside className="col-lg-6 explorar-ciudades-panel">
@@ -285,9 +288,10 @@ export const Explorar = () => {
               className="explorar-ciudades-list px-3 pb-3"
               aria-label="Ciudades disponibles"
             >
-              {ciudades.map((ciudad) => (
+              {ciudades.map((ciudad, indice) => (
                 <TarjetaCiudad
                   ciudad={ciudad}
+                  indice={indice}
                   key={ciudad.slug}
                   onSeleccionar={setCiudadSeleccionada}
                   seleccionada={ciudadSeleccionada?.slug === ciudad.slug}

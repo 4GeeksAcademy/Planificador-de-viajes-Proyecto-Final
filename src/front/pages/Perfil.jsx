@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { cerrarSesion, obtenerMensajeErrorBackend } from "../utils/autenticacion.mjs";
 import { fetchConSesion } from "../utils/sesion.mjs";
+import { useEntradaPagina } from "../animaciones/useEntradaPagina";
 
 const obtenerUsuarioGuardado = () => {
 	try {
@@ -79,6 +80,8 @@ const cargarActividad = async (token) => {
 };
 
 export const Perfil = () => {
+	const paginaRef = useRef(null);
+	useEntradaPagina(paginaRef);
 	const navigate = useNavigate();
 	const usuario = useMemo(obtenerUsuarioGuardado, []);
 	const [actividad, setActividad] = useState({ viajes: [], favoritos: [], error: "" });
@@ -112,11 +115,11 @@ export const Perfil = () => {
 	};
 
 	return (
-		<main className="min-vh-100 py-4 py-lg-5" style={{ backgroundColor: "#EAF7FA" }}>
+		<main ref={paginaRef} className="min-vh-100 py-4 py-lg-5 pagina-animada" style={{ backgroundColor: "#EAF7FA" }}>
 			<div className="container-fluid px-3 px-md-4 px-xl-5" style={{ maxWidth: "1440px" }}>
 				<div className="row g-0 shadow-sm">
 					{/* Navegación e identidad */}
-					<aside className="col-12 col-lg-4 d-flex flex-column p-4 p-md-5" style={{ backgroundColor: "#12343B", color: "#FFFFFF", minHeight: "620px" }}>
+					<aside className="col-12 col-lg-4 d-flex flex-column p-4 p-md-5 perfil-identidad" style={{ backgroundColor: "#12343B", color: "#FFFFFF", minHeight: "620px" }}>
 						<div>
 							<Link to="/" className="d-inline-flex align-items-center text-decoration-none small" style={{ color: "#8CE3ED" }}>
 								<i className="fa-solid fa-arrow-left me-2" aria-hidden="true" />Volver al inicio
@@ -130,9 +133,6 @@ export const Perfil = () => {
 						</div>
 
 						<nav aria-label="Navegación del perfil" className="mt-lg-auto">
-							<Link to="/perfil" className="d-flex justify-content-between align-items-center text-decoration-none py-3" style={{ color: "#FFFFFF", borderTop: "1px solid rgba(212, 240, 245, 0.28)" }}>
-								<span>Resumen</span><i className="fa-solid fa-arrow-right" aria-hidden="true" />
-							</Link>
 							<Link to="/perfil/configuracion" className="d-flex justify-content-between align-items-center text-decoration-none py-3" style={{ color: "#BDECF1", borderTop: "1px solid rgba(212, 240, 245, 0.28)" }}>
 								<span>Editar datos</span><i className="fa-solid fa-pen" aria-hidden="true" />
 							</Link>
@@ -146,7 +146,6 @@ export const Perfil = () => {
 					<section className="col-12 col-lg-8 p-4 p-md-5" style={{ backgroundColor: "#FFFFFF" }}>
 						<header className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-end gap-3 pb-4" style={{ borderBottom: "1px solid #DDECEF" }}>
 							<div>
-								<p className="mb-2 text-uppercase fw-semibold" style={{ color: "#078A9A", letterSpacing: "0.14em", fontSize: "0.72rem" }}>Resumen</p>
 								<h2 className="mb-0" style={{ color: "#12343B", fontFamily: "Fraunces, Georgia, serif", fontSize: "clamp(2rem, 4vw, 3.2rem)", fontWeight: 600 }}>Tu recorrido</h2>
 							</div>
 							<Link to="/trips/new" className="btn px-3 py-2" style={{ backgroundColor: "#28C3D4", color: "#12343B", borderRadius: 0 }}><i className="fa-solid fa-plus me-2" aria-hidden="true" />Nuevo viaje</Link>

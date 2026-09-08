@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
 	obtenerFechaMinimaViaje,
@@ -7,6 +7,7 @@ import {
 } from "../utils/viajes.mjs";
 import { obtenerMensajeErrorBackend } from "../utils/autenticacion.mjs";
 import { fetchConSesion } from "../utils/sesion.mjs";
+import { useEntradaPagina } from "../animaciones/useEntradaPagina";
 
 const estiloTitulo = {
 	fontFamily: "Fraunces, Georgia, serif",
@@ -22,6 +23,8 @@ const estiloInput = {
 };
 
 export const CrearViaje = () => {
+	const paginaRef = useRef(null);
+	useEntradaPagina(paginaRef);
 	const navigate = useNavigate();
 	const [formulario, setFormulario] = useState({
 		name: "",
@@ -36,6 +39,10 @@ export const CrearViaje = () => {
 	const manejarCambio = (event) => {
 		const { name, value } = event.target;
 		setFormulario((actual) => ({ ...actual, [name]: value }));
+	};
+
+	const abrirCalendario = (event) => {
+		event.currentTarget.showPicker?.();
 	};
 
 	const manejarEnvio = async (event) => {
@@ -107,7 +114,8 @@ export const CrearViaje = () => {
 
 	return (
 		<main
-			className="min-vh-100 d-flex align-items-center py-5"
+			ref={paginaRef}
+			className="min-vh-100 d-flex align-items-center py-5 pagina-animada"
 			style={{ backgroundColor: "#EAF7FA" }}
 		>
 			<div className="container">
@@ -188,6 +196,7 @@ export const CrearViaje = () => {
 													min={fechaMinima}
 													value={formulario.start_date}
 													onChange={manejarCambio}
+													onClick={abrirCalendario}
 													className="form-control"
 													style={estiloInput}
 												/>
@@ -210,6 +219,7 @@ export const CrearViaje = () => {
 													min={formulario.start_date || fechaMinima}
 													value={formulario.end_date}
 													onChange={manejarCambio}
+													onClick={abrirCalendario}
 													className="form-control"
 													style={estiloInput}
 												/>

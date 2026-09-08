@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useRevealOnScroll } from "../animaciones/useRevealOnScroll"
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -10,14 +10,14 @@ import sanJose from "../assets/img/san-jose-costa-rica.jpg";
 import valparaiso from "../assets/img/valparaiso-chile.jpg";
 
 const destinations = [
-  { city: "Valparaíso", country: "Chile", image: valparaiso },
-  { city: "San José", country: "Costa Rica", image: sanJose },
-  { city: "Río de Janeiro", country: "Brasil", image: rio },
-  { city: "Buenos Aires", country: "Argentina", image: buenosAires },
-  { city: "Lima", country: "Perú", image: lima },
+  { city: "Valparaíso", country: "Chile", slug: "valparaiso-chile", image: valparaiso },
+  { city: "San José", country: "Costa Rica", slug: "san-jose-costa-rica", image: sanJose },
+  { city: "Río de Janeiro", country: "Brasil", slug: "rio-de-janeiro-brasil", image: rio },
+  { city: "Buenos Aires", country: "Argentina", slug: "buenos-aires-argentina", image: buenosAires },
+  { city: "Lima", country: "Perú", slug: "lima-peru", image: lima },
 ];
 
-const Boton = ({ children, onClick }) => {
+const Boton = ({ children, onClick, to }) => {
   const [hovered, setHovered] = useState(false);
   const style = {
     backgroundColor: hovered ? "#0F6B78" : "transparent",
@@ -26,10 +26,12 @@ const Boton = ({ children, onClick }) => {
     color: hovered ? "#FFFFFF" : "#12343B",
     transition: "background-color 0.25s ease, color 0.25s ease",
   };
+  const Elemento = to ? Link : "button";
 
   return (
-    <button
-      type="button"
+    <Elemento
+      type={to ? undefined : "button"}
+      to={to}
       className="btn btn-lg px-4 py-3"
       style={style}
       onMouseEnter={() => setHovered(true)}
@@ -37,18 +39,26 @@ const Boton = ({ children, onClick }) => {
       onClick={onClick}
     >
       {children}
-    </button>
+    </Elemento>
   );
 };
 
-const TarjetaDestino = ({ destination, large = false }) => {
+const TarjetaDestino = ({ destination, large = false, onClick }) => {
   const [hovered, setHovered] = useState(false);
 
   return (
     <div className={large ? "col-lg-6" : "col-sm-6"}>
-      <div
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={`Explorar ${destination.city}, ${destination.country}`}
         className="h-100"
         style={{
+          display: "block",
+          width: "100%",
+          padding: 0,
+          border: 0,
+          textAlign: "left",
           minHeight: large ? "390px" : "190px",
           borderRadius: 0,
           overflow: "hidden",
@@ -97,7 +107,7 @@ const TarjetaDestino = ({ destination, large = false }) => {
             {destination.city}
           </h3>
         </div>
-      </div>
+      </button>
     </div>
   );
 };
@@ -107,8 +117,11 @@ export const Home = () => {
   const [activeDestination, setActiveDestination] = useState(0);
   const heroRef = useRef(null)
   const destinationSelectionRef = useRef(null)
+  const inicioDeslizamientoRef = useRef(null);
 
   useGSAP(()=>{
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
     gsap.from(".hero-left", {
       x: -210,
       opacity: 0,
@@ -130,6 +143,28 @@ export const Home = () => {
 
     return () => window.clearInterval(interval);
   }, []);
+
+  const cambiarDestino = (direccion) => {
+    setActiveDestination((actual) =>
+      (actual + direccion + destinations.length) % destinations.length,
+    );
+  };
+
+  const manejarInicioDeslizamiento = (event) => {
+    inicioDeslizamientoRef.current = event.clientX;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+
+  const manejarFinDeslizamiento = (event) => {
+    if (inicioDeslizamientoRef.current === null) return;
+
+    const desplazamiento = event.clientX - inicioDeslizamientoRef.current;
+    inicioDeslizamientoRef.current = null;
+
+    if (Math.abs(desplazamiento) < 50) return;
+
+    cambiarDestino(desplazamiento < 0 ? 1 : -1);
+  };
 
   useRevealOnScroll(destinationSelectionRef, "left", {
     distance: 520,
@@ -186,7 +221,7 @@ export const Home = () => {
                 espacio para disfrutar más y preocuparte menos.
               </p>
               <div className="d-flex flex-wrap gap-3">
-                <Boton onClick={() => navigate("/trips/new")}>Crear mi viaje</Boton>
+                <Boton to="/trips/new">Planifica tu viaje</Boton>
                 <Boton onClick={() => navigate("/explorar")}>Explorar destinos</Boton>
               </div>
             </div>
@@ -194,7 +229,12 @@ export const Home = () => {
 
           <div
             className="col-lg-6 position-relative overflow-hidden hero-right"
-            style={{ minHeight: "520px" }}
+            onPointerDown={manejarInicioDeslizamiento}
+            onPointerUp={manejarFinDeslizamiento}
+            onPointerCancel={() => {
+              inicioDeslizamientoRef.current = null;
+            }}
+            style={{ minHeight: "520px", touchAction: "pan-y" }}
           >
             <div
               className="d-flex h-100"
@@ -257,7 +297,8 @@ export const Home = () => {
                     </h2>
                     <button
                       type="button"
-                      className="btn mt-3 px-3 py-2"
+                      className="btn btn-animado mt-3 px-3 py-2"
+                      onClick={() => navigate("/trips/new")}
                       style={{
                         backgroundColor: "#28C3D4",
                         color: "#12343B",
@@ -327,13 +368,29 @@ export const Home = () => {
             </button>
           </div>
           <div className="row g-2">
-            <TarjetaDestino destination={destinations[0]} large />
+            <TarjetaDestino
+              destination={destinations[0]}
+              large
+              onClick={() => navigate(`/explorar/${destinations[0].slug}`)}
+            />
             <div className="col-lg-6">
               <div className="row g-2 h-100">
-                <TarjetaDestino destination={destinations[2]} />
-                <TarjetaDestino destination={destinations[3]} />
-                <TarjetaDestino destination={destinations[1]} />
-                <TarjetaDestino destination={destinations[4]} />
+                <TarjetaDestino
+                  destination={destinations[2]}
+                  onClick={() => navigate(`/explorar/${destinations[2].slug}`)}
+                />
+                <TarjetaDestino
+                  destination={destinations[3]}
+                  onClick={() => navigate(`/explorar/${destinations[3].slug}`)}
+                />
+                <TarjetaDestino
+                  destination={destinations[1]}
+                  onClick={() => navigate(`/explorar/${destinations[1].slug}`)}
+                />
+                <TarjetaDestino
+                  destination={destinations[4]}
+                  onClick={() => navigate(`/explorar/${destinations[4].slug}`)}
+                />
               </div>
             </div>
           </div>

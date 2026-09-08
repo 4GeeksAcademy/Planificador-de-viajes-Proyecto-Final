@@ -7,6 +7,7 @@ import {
 import { Layout } from "./pages/Layout";
 import { RutaProtegida } from "./components/RutaProtegida";
 import { RutaAdmin } from "./components/RutaAdmin";
+import { CargadorPagina } from "./animaciones/CargadorPagina";
 
 const lazyPage = (loader, exportName) =>
   lazy(() => loader().then((module) => ({ default: module[exportName] })));
@@ -52,7 +53,7 @@ export const router = createBrowserRouter(
     <Route
       path="/"
       element={
-        <Suspense fallback={<div className="container py-5">Cargando...</div>}>
+        <Suspense fallback={<CargadorPagina />}>
           <Layout />
         </Suspense>
       }

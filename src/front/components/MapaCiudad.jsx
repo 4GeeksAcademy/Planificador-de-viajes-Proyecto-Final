@@ -76,39 +76,6 @@ const MapaRedimensionable = () => {
   return null;
 };
 
-const MedidorZoom = () => {
-  const mapa = useMap();
-  const [zoom, setZoom] = useState(() => mapa.getZoom());
-
-  useEffect(() => {
-    const actualizarZoom = () => setZoom(mapa.getZoom());
-
-    mapa.on("zoomend", actualizarZoom);
-
-    return () => mapa.off("zoomend", actualizarZoom);
-  }, [mapa]);
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: "10px",
-        right: "10px",
-        zIndex: 400,
-        padding: "6px 9px",
-        backgroundColor: "rgba(255, 255, 255, 0.9)",
-        color: "#12343B",
-        fontFamily: "DM Sans, sans-serif",
-        fontSize: "12px",
-        fontWeight: 700,
-        pointerEvents: "none",
-      }}
-    >
-      Zoom: {zoom}
-    </div>
-  );
-};
-
 const crearIconoLugar = (lugar, seleccionado = false, zoom = 13) => {
   const { color } = lugar.style;
 
@@ -545,7 +512,6 @@ export const MapaCiudad = ({
 
       <MapaRedimensionable />
 
-      <MedidorZoom />
 
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

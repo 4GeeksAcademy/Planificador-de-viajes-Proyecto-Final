@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchConSesion } from "../utils/sesion.mjs";
 import { obtenerMensajeErrorBackend } from "../utils/autenticacion.mjs";
+import { useEntradaPagina } from "../animaciones/useEntradaPagina";
 
 const obtenerUsuarioGuardado = () => {
 	try {
@@ -19,6 +20,8 @@ const CampoPerfil = ({ id, name, label, type = "text", value, onChange, required
 );
 
 export const ConfiguracionPerfil = () => {
+	const paginaRef = useRef(null);
+	useEntradaPagina(paginaRef);
 	const usuarioGuardado = useMemo(obtenerUsuarioGuardado, []);
 	const [formulario, setFormulario] = useState({
 		first_name: usuarioGuardado.first_name || "",
@@ -89,7 +92,7 @@ export const ConfiguracionPerfil = () => {
 	};
 
 	return (
-		<main className="min-vh-100 py-4 py-md-5" style={{ backgroundColor: "#F5FBFC" }}>
+		<main ref={paginaRef} className="min-vh-100 py-4 py-md-5 pagina-animada" style={{ backgroundColor: "#F5FBFC" }}>
 			<div className="container" style={{ maxWidth: "1120px" }}>
 				{/* Cabecera de configuración */}
 				<header className="d-flex justify-content-between align-items-center mb-4 pb-4" style={{ borderBottom: "1px solid #B8DCE3" }}>

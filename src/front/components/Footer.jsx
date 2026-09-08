@@ -15,7 +15,7 @@ export const Footer = () => (
         Proyecto realizado por Jorge Montiel &amp; Vicente Flores
       </p>
       <a
-        href="https://github.com/Bisual0/Planificador-de-viajes-Proyecto-Final"
+        href="https://github.com/4GeeksAcademy/Planificador-de-viajes-Proyecto-Final"
         target="_blank"
         rel="noreferrer"
         className="small text-decoration-none"
