@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { cerrarSesion, obtenerMensajeErrorBackend } from "../utils/autenticacion.mjs";
 import { fetchConSesion } from "../utils/sesion.mjs";
@@ -18,6 +18,29 @@ const formatearFecha = (fecha) => {
 		month: "short",
 		year: "numeric",
 	}).format(new Date(`${fecha}T00:00:00`)).replace(".", "");
+};
+
+const obtenerFechaLocal = () => {
+	const hoy = new Date();
+	const anio = hoy.getFullYear();
+	const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+	const dia = String(hoy.getDate()).padStart(2, "0");
+	return `${anio}-${mes}-${dia}`;
+};
+
+const obtenerEstadoViajes = (viajes) => {
+	if (!viajes.length) return "Listo para explorar";
+
+	const hoy = obtenerFechaLocal();
+	const hayViajeEnCurso = viajes.some((viaje) => (
+		viaje.start_date && viaje.end_date && viaje.start_date <= hoy && hoy <= viaje.end_date
+	));
+	if (hayViajeEnCurso) return "Viajes en curso";
+
+	const hayViajeFuturo = viajes.some((viaje) => viaje.start_date && viaje.start_date > hoy);
+	if (hayViajeFuturo) return "En planificación";
+
+	return "Sin viajes próximos";
 };
 
 const cargarActividad = async (token) => {
@@ -135,7 +158,7 @@ export const Perfil = () => {
 						<div className="row g-0 py-4" style={{ borderBottom: "1px solid #DDECEF" }}>
 							<div className="col-6 col-md-4 pe-3"><span className="d-block small text-uppercase fw-semibold mb-2" style={{ color: "#6B8991", letterSpacing: "0.08em" }}>Viajes</span><strong className="d-block" style={{ color: "#12343B", fontSize: "3.2rem", lineHeight: 1 }}>{cargando ? "—" : actividad.viajes.length}</strong></div>
 							<div className="col-6 col-md-4 ps-3 border-start"><span className="d-block small text-uppercase fw-semibold mb-2" style={{ color: "#6B8991", letterSpacing: "0.08em" }}>Favoritos</span><strong className="d-block" style={{ color: "#12343B", fontSize: "3.2rem", lineHeight: 1 }}>{cargando ? "—" : actividad.favoritos.length}</strong></div>
-							<div className="d-none d-md-block col-md-4 ps-4 border-start"><span className="d-block small text-uppercase fw-semibold mb-2" style={{ color: "#6B8991", letterSpacing: "0.08em" }}>Estado</span><strong className="d-block" style={{ color: "#078A9A", fontSize: "1.1rem", lineHeight: 1, marginTop: "1.45rem" }}>En planificación</strong></div>
+							<div className="d-none d-md-block col-md-4 ps-4 border-start"><span className="d-block small text-uppercase fw-semibold mb-2" style={{ color: "#6B8991", letterSpacing: "0.08em" }}>Estado</span><strong className="d-block" style={{ color: "#078A9A", fontSize: "1.1rem", lineHeight: 1, marginTop: "1.45rem" }}>{cargando ? "—" : obtenerEstadoViajes(actividad.viajes)}</strong></div>
 						</div>
 
 						{/* Lista editorial de viajes */}

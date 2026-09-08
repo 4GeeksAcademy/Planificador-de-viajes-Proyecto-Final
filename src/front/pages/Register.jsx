@@ -17,12 +17,6 @@ const estiloTitulo = {
 	color: "#FFFFFF",
 };
 
-const estiloEtiqueta = {
-	color: "#28C3D4",
-	letterSpacing: "0.14em",
-	fontSize: "0.75rem",
-};
-
 const estiloInput = {
 	border: "1px solid #B8DCE3",
 	borderRadius: 0,
@@ -40,12 +34,13 @@ export const Register = () => {
 		password: "",
 	});
 	const [aceptaTerminos, setAceptaTerminos] = useState(false);
+	const [mostrarPassword, setMostrarPassword] = useState(false);
 	const [cargando, setCargando] = useState(false);
 	const [error, setError] = useState("");
 	const [exito, setExito] = useState("");
-	const layourRef = useRef(null)
+	const layoutRef = useRef(null);
 
-	useSplitEntrance(layourRef)
+	useSplitEntrance(layoutRef);
 
 	const manejarCambio = (event) => {
 		const { name, value } = event.target;
@@ -99,13 +94,10 @@ export const Register = () => {
 		<main className="min-vh-100 d-flex align-items-center py-5" style={{ backgroundColor: "#EAF7FA" }}>
 			<div className="container">
 				<div className="row justify-content-center">
-					<div className="col-lg-10 col-xl-9">
-						<div className="row g-0 shadow-sm" ref={layourRef}>
+					<div className="col-12 col-md-8 col-lg-6">
+						<div className="row g-0 shadow-sm" ref={layoutRef}>
 							{/* Formulario de Register */}
-							<section className="col-lg-7 p-4 p-lg-5 split-left" style={{ backgroundColor: "#12343B" }}>
-								<p className="mb-2 text-uppercase fw-semibold" style={estiloEtiqueta}>
-									Empieza a planificar
-								</p>
+							<section className="col-12 p-4 p-lg-5 split-left" style={{ backgroundColor: "#12343B" }}>
 								<h1 className="display-6 mb-3" style={estiloTitulo}>
 									Crea tu cuenta
 								</h1>
@@ -199,18 +191,30 @@ export const Register = () => {
 										<label htmlFor="register-password" className="form-label small fw-semibold" style={{ color: "#EAF7FA" }}>
 											Contraseña
 										</label>
-										<input
-											id="register-password"
-											name="password"
-											type="password"
-											required
-											minLength="8"
-											value={formulario.password}
-											onChange={manejarCambio}
-											className="form-control"
-											placeholder="Crea una contraseña segura"
-											style={estiloInput}
-										/>
+										<div className="input-group">
+											<input
+												id="register-password"
+												name="password"
+												type={mostrarPassword ? "text" : "password"}
+												required
+												minLength="8"
+												value={formulario.password}
+												onChange={manejarCambio}
+												className="form-control"
+												placeholder="Crea una contraseña segura"
+												style={estiloInput}
+											/>
+											<button
+												type="button"
+												className="btn"
+												onClick={() => setMostrarPassword((actual) => !actual)}
+												aria-label={mostrarPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+												aria-pressed={mostrarPassword}
+												style={{ border: "1px solid #B8DCE3", color: "#078A9A" }}
+											>
+												<i className={`fa-solid ${mostrarPassword ? "fa-eye-slash" : "fa-eye"}`} aria-hidden="true" />
+											</button>
+										</div>
 									</div>
 									<div className="form-check mb-4">
 										<input
@@ -241,22 +245,7 @@ export const Register = () => {
 									</Link>
 								</p>
 							</section>
-
-							{/* Mensaje de apoyo */}
-							<section className="col-lg-5 d-none d-lg-flex align-items-center p-5 split-right" style={{ backgroundColor: "#FFFFFF" }}>
-								<div className="p-4" style={{ borderLeft: "3px solid #28C3D4" }}>
-									<p className="mb-2 text-uppercase fw-semibold" style={{ ...estiloEtiqueta, color: "#078A9A" }}>
-										Tu próximo viaje
-									</p>
-									<h2 className="h1 mb-3" style={{ ...estiloTitulo, color: "#12343B" }}>
-										Convierte una idea en un itinerario.
-									</h2>
-									<p className="mb-0" style={{ color: "#456B75", lineHeight: 1.7 }}>
-										Crea tu espacio y ten tu aventura organizada en un solo lugar.
-									</p>
-								</div>
-							</section>
-						</div>
+							</div>
 					</div>
 				</div>
 			</div>

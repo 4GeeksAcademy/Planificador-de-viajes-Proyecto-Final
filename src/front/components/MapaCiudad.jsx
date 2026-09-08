@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import L from "leaflet";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
@@ -477,20 +477,9 @@ const CapaLugares = ({
     });
 
     /*
-			Mostrar el marcador seleccionado.
-		*/
-
-    const marcadorSeleccionado = lugarSeleccionado
-      ? marcadoresRef.current.get(lugarSeleccionado.id)
-      : null;
-
-    const capaSeleccionada = marcadorSeleccionado
-      ? capas.get(marcadorSeleccionado.options.categoria)
-      : null;
-
-    if (marcadorSeleccionado && capaSeleccionada) {
-      capaSeleccionada.zoomToShowLayer(marcadorSeleccionado);
-    }
+      Conservar referencias del estado actual.
+      El mapa no se recentra automáticamente al cambiar el zoom.
+    */
 
     lugarSeleccionadoAnteriorRef.current = lugarSeleccionado;
     zoomAnteriorRef.current = zoomActual;

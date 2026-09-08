@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CargadorMapa } from "../animaciones/CargadorMapa";
 import { MapaCiudad } from "../components/MapaCiudad";
+import { BotonFavoritoLugar } from "../components/BotonFavoritoLugar";
 import { TarjetaCiudad } from "../components/TarjetaCiudad";
 import { ciudades, LUGAR_ESTILOS } from "../data/ciudades.mjs";
 import "../explorar.css";
@@ -112,6 +113,7 @@ const consultarGrupo = async (ciudad, grupo, puntoConsulta) => {
     .map((lugar) => ({
       ...lugar,
       city: ciudad.city,
+      country: ciudad.country,
       style: LUGAR_ESTILOS[lugar.category] || LUGAR_ESTILOS.attraction,
     }));
 };
@@ -124,13 +126,6 @@ const consultarGrupoConReintentos = async (ciudad, grupo, puntoConsulta) => {
       const quedanReintentos = intento < ESPERAS_REINTENTO_MS.length;
 
       if (!quedanReintentos || !esErrorTransitorio(error)) {
-        console.log("Overpass: grupo no cargado tras los reintentos.", {
-          ciudad: ciudad.city,
-          grupo,
-          lado: puntoConsulta.lado,
-          error: error.message,
-        });
-
         throw error;
       }
 
@@ -349,6 +344,9 @@ export const Explorar = () => {
                     <small className="explorar-lugar-detalle-fuente">
                       {direccionSeleccionada?.source || lugarSeleccionado.source}
                     </small>
+                    <div className="mt-3 pt-3" style={{ borderTop: "1px solid #DDECEF" }}>
+                      <BotonFavoritoLugar lugar={lugarSeleccionado} ciudad={ciudadSeleccionada} />
+                    </div>
                   </div>
 
                   <button
@@ -374,9 +372,6 @@ export const Explorar = () => {
                 </p>
               )}
 
-              {estado === "success" && (
-                <p>{lugares.length} lugares mostrados.</p>
-              )}
             </div>
           </section>
         </div>

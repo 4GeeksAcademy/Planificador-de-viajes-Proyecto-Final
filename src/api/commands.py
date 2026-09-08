@@ -1,4 +1,5 @@
 import click
+from werkzeug.security import generate_password_hash
 from api.models import db, User, Place
 
 """
@@ -28,11 +29,39 @@ def setup_commands(app):
 
         print("All test users created")
 
+    @app.cli.command("create-admin")
+    @click.option("--username", prompt="Username")
+    @click.option("--email", prompt="Email")
+    @click.option("--password", prompt=True, hide_input=True, confirmation_prompt=True)
+    @click.option("--first-name", default="", show_default=False)
+    @click.option("--last-name", default="", show_default=False)
+    def create_admin(username, email, password, first_name, last_name):
+        """Create an administrator or promote an existing user."""
+        user = User.query.filter((User.email == email) | (User.username == username)).first()
+        if user:
+            user.is_admin = True
+            user.is_active = True
+            user.is_verified = True
+            click.echo(f"Administrador actualizado: {user.username}")
+        else:
+            user = User(
+                username=username,
+                email=email,
+                password_hash=generate_password_hash(password),
+                first_name=first_name,
+                last_name=last_name,
+                is_active=True,
+                is_verified=True,
+                is_admin=True,
+            )
+            db.session.add(user)
+            click.echo(f"Administrador creado: {username}")
+        db.session.commit()
+
     @app.cli.command("insert-test-data")
     def insert_test_data():
         pass
 
-    # NUEVO COMANDO: Sembrar lugares
     @app.cli.command("seed-places")
     def seed_places():
         """Poblar la tabla place con datos iniciales"""
@@ -105,9 +134,9 @@ def setup_commands(app):
             if not existing:
                 place = Place(**data)
                 db.session.add(place)
-                print(f"✅ Agregado: {data['city']}")
+                print(f"Agregado: {data['city']}")
             else:
-                print(f"⏭️ Ya existe: {data['city']}")
+                print(f"Ya existe: {data['city']}")
         
         db.session.commit()
-        print(f"✅ {len(places_data)} lugares procesados correctamente")
+        print(f"{len(places_data)} lugares procesados correctamente")

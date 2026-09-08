@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useEntradaDesdeArriba } from "../animaciones/useEntradaDesdeArriba";
 import { cerrarSesion } from "../utils/autenticacion.mjs";
@@ -8,6 +8,13 @@ export const Navbar = () => {
 	const navbarRef = useRef(null);
 	const botonMenuRef = useRef(null);
 	const [sesionActiva, setSesionActiva] = useState(() => Boolean(localStorage.getItem("token")));
+	const [usuarioActual, setUsuarioActual] = useState(() => {
+		try {
+			return JSON.parse(localStorage.getItem("user") || "null");
+		} catch {
+			return null;
+		}
+	});
 	const [menuAbierto, setMenuAbierto] = useState(false);
 
 	useEntradaDesdeArriba(navbarRef, {
@@ -20,6 +27,11 @@ export const Navbar = () => {
 	useEffect(() => {
 		const actualizarSesion = () => {
 			setSesionActiva(Boolean(localStorage.getItem("token")));
+			try {
+				setUsuarioActual(JSON.parse(localStorage.getItem("user") || "null"));
+			} catch {
+				setUsuarioActual(null);
+			}
 		};
 
 		window.addEventListener("sesion-cambiada", actualizarSesion);
@@ -102,7 +114,7 @@ export const Navbar = () => {
  								 className="nav-link"
  								 style={{ color: "#D4F0F5" }}
 									>
-  								⭐ Favoritos
+								<i className="fa-solid fa-bookmark me-2" aria-hidden="true" />Favoritos
 							</Link>
 						</li>
 						<li className="nav-item dropdown">
@@ -136,6 +148,11 @@ export const Navbar = () => {
 												Mi Perfil
 											</Link>
 										</li>
+										{usuarioActual?.is_admin && (
+											<li>
+												<Link to="/admin" className="dropdown-item">Panel admin</Link>
+											</li>
+										)}
 										<li>
 											<button type="button" className="dropdown-item" onClick={manejarCierreSesion}>
 												Cerrar sesión
@@ -261,14 +278,14 @@ export const Navbar = () => {
 							className="nav-item"
 							style={{ borderTop: "1px solid rgba(212, 240, 245, 0.18)" }}
 						>
-							<a
+							<Link
+								to="/favoritos"
 								className="nav-link w-100 py-3 px-1 text-start"
 								onClick={cerrarMenu}
-								href="#footer"
 								style={{ color: "#D4F0F5" }}
 							>
 								Favoritos
-							</a>
+							</Link>
 						</li>
 						<li
 							className="nav-item dropdown"
@@ -311,6 +328,11 @@ export const Navbar = () => {
 												Mi Perfil
 											</Link>
 										</li>
+										{usuarioActual?.is_admin && (
+											<li>
+												<Link to="/admin" className="dropdown-item" onClick={cerrarMenu}>Panel admin</Link>
+											</li>
+										)}
 										<li>
 											<button
 												type="button"

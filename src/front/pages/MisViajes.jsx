@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { DropdownSeleccion } from "../components/DropdownSeleccion";
 import { TarjetaViaje } from "../components/TarjetaViaje";
 import { obtenerMensajeErrorBackend } from "../utils/autenticacion.mjs";
@@ -7,7 +7,6 @@ import { ordenarViajes } from "../utils/viajes.mjs";
 import { fetchConSesion } from "../utils/sesion.mjs";
 
 export const MisViajes = () => {
-	const location = useLocation();
 	const [viajes, setViajes] = useState([]);
 	const [cargando, setCargando] = useState(true);
 	const [error, setError] = useState("");
@@ -132,14 +131,6 @@ export const MisViajes = () => {
 					</div>
 				</div>
 
-				{location.state?.mensaje && (
-					<div
-						className="alert alert-success rounded-0"
-						role="status"
-					>
-						{location.state.mensaje}
-					</div>
-				)}
 				{cargando && <p style={{ color: "#456B75" }}>Cargando tus viajes...</p>}
 				{error && (
 					<div

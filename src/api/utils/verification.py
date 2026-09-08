@@ -15,11 +15,11 @@ def generar_token_verificacion(email, salt="email-verification"):
         
         token = s.dumps(email, salt=salt)
         
-        logger.info(f"✅ Token generado para: {email}")
+        logger.info(f"Token de verificación generado para: {email}")
         return token
         
     except Exception as e:
-        logger.error(f"❌ Error generando token : {str(e)}")
+        logger.error(f"Error generando token de verificación: {str(e)}")
         return None
 
 
@@ -27,15 +27,15 @@ def verificar_token(token, salt="email-verification"):
     try:
         s = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
         
-        email = s.loads(token, salt, max_age=3600)
+        email = s.loads(token, salt=salt, max_age=3600)
         
-        logger.info(f"✅ Token generado para: {email}")
+        logger.info(f"Token de verificación generado para: {email}")
         
         return email
 
         
     except Exception as e:
-        logger.warning(f"❌ Token inválido o expirado: {str(e)}")
+        logger.warning(f"Token inválido o expirado: {str(e)}")
         return None
     
 def generar_token_recuperacion(email):

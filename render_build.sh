@@ -2,9 +2,9 @@
 # exit on error
 set -o errexit
 
-npm install
+npm ci
 npm run build
 
-pipenv install
+pipenv install --deploy --ignore-pipfile
 
 pipenv run upgrade

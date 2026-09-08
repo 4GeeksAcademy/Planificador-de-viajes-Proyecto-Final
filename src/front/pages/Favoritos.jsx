@@ -1,188 +1,200 @@
-import React from "react";
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { fetchConSesion } from "../utils/sesion.mjs";
+import { obtenerMensajeErrorBackend } from "../utils/autenticacion.mjs";
+import { ciudades } from "../data/ciudades.mjs";
+
+const formatearFecha = (fecha) => {
+	if (!fecha) return "";
+	return new Intl.DateTimeFormat("es", {
+		day: "numeric",
+		month: "short",
+		year: "numeric"
+	}).format(new Date(fecha)).replace(".", "");
+};
+
+const obtenerCiudad = (favorito) => favorito.place?.city || "Otros lugares";
 
 export const Favoritos = () => {
+	const navigate = useNavigate();
 	const [favoritos, setFavoritos] = useState([]);
+	const [ciudadActiva, setCiudadActiva] = useState("");
 	const [cargando, setCargando] = useState(true);
+	const [eliminando, setEliminando] = useState(null);
+	const [confirmando, setConfirmando] = useState(null);
 	const [error, setError] = useState("");
-	const token = localStorage.getItem("token");
 
 	useEffect(() => {
+		let activa = true;
 		const cargarFavoritos = async () => {
+			if (!localStorage.getItem("token")) {
+				navigate("/login", { replace: true });
+				return;
+			}
+
 			try {
-				const res = await fetchConSesion(`${import.meta.env.VITE_BACKEND_URL}/api/favorites`, {
-					headers: { 
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}` 
-					}
-				});
-
-				console.log("Status de /api/favorites:", res.status);
-				const text = await res.text();
-				console.log("Respuesta cruda de /api/favorites:", text);
-
-				if (!res.ok) {
-					throw new Error(`Error ${res.status}: ${text}`);
+				const respuesta = await fetchConSesion(`${import.meta.env.VITE_BACKEND_URL}/api/favorites`);
+				const datos = await respuesta.json().catch(() => ({}));
+				if (!respuesta.ok) {
+					throw new Error(obtenerMensajeErrorBackend(datos, "No fue posible cargar tus favoritos."));
 				}
 
-				const data = JSON.parse(text);
-				console.log("Favoritos cargados:", data);
-				setFavoritos(data);
+				const favoritosCargados = Array.isArray(datos) ? datos.filter((favorito) => favorito.place) : [];
+				if (!activa) return;
+				setFavoritos(favoritosCargados);
+				setCiudadActiva(favoritosCargados[0] ? obtenerCiudad(favoritosCargados[0]) : "");
 			} catch (err) {
-				console.error("Error al cargar favoritos:", err);
-				setError(err.message || "Error al cargar favoritos");
+				if (activa) setError(err.message || "No fue posible cargar tus favoritos.");
 			} finally {
-				setCargando(false);
+				if (activa) setCargando(false);
 			}
 		};
-		cargarFavoritos();
-	}, []);
 
-	const handleEliminarFavorito = async (favoritoId) => {
-		if (!window.confirm("¿Eliminar este favorito?")) return;
-		
+		cargarFavoritos();
+		return () => {
+			activa = false;
+		};
+	}, [navigate]);
+
+	const ciudades = useMemo(() => {
+		const agrupadas = new Map();
+		favoritos.forEach((favorito) => {
+			const ciudad = obtenerCiudad(favorito);
+			if (!agrupadas.has(ciudad)) agrupadas.set(ciudad, []);
+			agrupadas.get(ciudad).push(favorito);
+		});
+		return [...agrupadas.entries()].map(([nombre, lugares]) => ({ nombre, lugares }));
+	}, [favoritos]);
+
+	const favoritosVisibles = ciudades.find((ciudad) => ciudad.nombre === ciudadActiva)?.lugares || [];
+	const ciudadSeleccionada = favoritos.find((favorito) => obtenerCiudad(favorito) === ciudadActiva)?.place;
+
+	const eliminarFavorito = async (favorito) => {
+		setEliminando(favorito.id);
+		setError("");
 		try {
-			const res = await fetchConSesion(`${import.meta.env.VITE_BACKEND_URL}/api/favorites/${favoritoId}`, {
-				method: "DELETE",
-				headers: { 
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}` 
-				}
-			});
-			
-			if (res.ok) {
-				setFavoritos(favoritos.filter(f => f.id !== favoritoId));
-				console.log("Favorito eliminado correctamente");
-			} else {
-				const text = await res.text();
-				console.error("Error al eliminar:", text);
-				alert("No se pudo eliminar el favorito");
+			const respuesta = await fetchConSesion(`${import.meta.env.VITE_BACKEND_URL}/api/favorites/${favorito.id}`, { method: "DELETE" });
+			const datos = await respuesta.json().catch(() => ({}));
+			if (!respuesta.ok) {
+				throw new Error(obtenerMensajeErrorBackend(datos, "No fue posible quitar este lugar de favoritos."));
 			}
-		} catch (error) {
-			console.error("Error en la petición:", error);
-			alert("Error al eliminar favorito");
+
+			setFavoritos((favoritosActuales) => favoritosActuales.filter((actual) => actual.id !== favorito.id));
+			setConfirmando(null);
+		} catch (err) {
+			setError(err.message || "No fue posible quitar este lugar de favoritos.");
+		} finally {
+			setEliminando(null);
 		}
 	};
 
 	if (cargando) {
 		return (
-			<main className="min-vh-100 py-5" style={{ backgroundColor: "#EAF7FA" }}>
-				<div className="container text-center">
-					<p style={{ color: "#456B75" }}>Cargando favoritos...</p>
+			<main className="min-vh-100 d-flex align-items-center" style={{ backgroundColor: "#EAF7FA" }}>
+				<div className="container text-center py-5" style={{ color: "#456B75" }}>
+					<i className="fa-solid fa-spinner fa-spin me-2" aria-hidden="true" />
+					Cargando tu atlas...
 				</div>
 			</main>
 		);
 	}
 
 	return (
-		<main className="min-vh-100 py-5" style={{ backgroundColor: "#EAF7FA" }}>
-			<div className="container">
-				<div className="d-flex justify-content-between align-items-center mb-4">
+		<main className="min-vh-100 py-4 py-lg-5" style={{ backgroundColor: "#EAF7FA" }}>
+			<div className="container-fluid px-3 px-md-4 px-xl-5" style={{ maxWidth: "1440px" }}>
+				<header className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-4 mb-4">
 					<div>
-						<p
-							className="text-uppercase fw-semibold mb-1"
-							style={{ color: "#078A9A", letterSpacing: "0.14em", fontSize: "0.75rem" }}
-						>
-							Tus intereses
-						</p>
-						<h1
-							className="display-6 mb-0"
-							style={{ fontFamily: "Fraunces, Georgia, serif", color: "#12343B", fontWeight: 600 }}
-						>
-							⭐ Lugares Favoritos
-						</h1>
+						<Link to="/explorar" className="small text-decoration-none" style={{ color: "#078A9A" }}>
+							<i className="fa-solid fa-arrow-left me-2" aria-hidden="true" />Seguir explorando
+						</Link>
+						<p className="text-uppercase fw-semibold mt-4 mb-2" style={{ color: "#078A9A", letterSpacing: "0.16em", fontSize: "0.72rem" }}>Tu atlas personal</p>
+						<h1 className="display-4 mb-2" style={{ color: "#12343B", fontFamily: "Fraunces, Georgia, serif", fontWeight: 600 }}>Lugares para volver.</h1>
 					</div>
-					<Link to="/mis-viajes" className="btn btn-outline-secondary">
-						← Volver a Mis Viajes
-					</Link>
-				</div>
+					<div className="text-lg-end" style={{ color: "#456B75" }}>
+						<span className="d-block display-6" style={{ color: "#12343B", fontFamily: "Fraunces, Georgia, serif", fontWeight: 600 }}>{favoritos.length}</span>
+						<span className="small text-uppercase fw-semibold" style={{ letterSpacing: "0.12em" }}>lugares guardados</span>
+					</div>
+				</header>
 
-				{error && (
-					<div className="alert alert-danger rounded-0" role="alert">
-						{error}
-					</div>
-				)}
+				{error && <div className="alert alert-danger rounded-0" role="alert">{error}</div>}
 
 				{favoritos.length === 0 ? (
-					<div className="text-center py-5" style={{ backgroundColor: "#FFFFFF", padding: "3rem" }}>
-						<p className="h3" style={{ fontFamily: "Fraunces, Georgia, serif", color: "#12343B" }}>
-							📌 No tienes lugares favoritos
-						</p>
-						<p style={{ color: "#456B75" }}>
-							Explora destinos y marca lugares como favoritos para encontrarlos aquí.
-						</p>
-						<Link to="/explorar" className="btn" style={{ backgroundColor: "#28C3D4", color: "#FFFFFF" }}>
-							🌍 Explorar destinos
-						</Link>
-					</div>
+					<section className="p-4 p-md-5" style={{ backgroundColor: "#12343B", color: "#FFFFFF" }}>
+						<p className="text-uppercase small fw-semibold mb-3" style={{ color: "#8CE3ED", letterSpacing: "0.14em" }}>El atlas está esperando</p>
+						<h2 className="display-6 mb-3" style={{ fontFamily: "Fraunces, Georgia, serif", fontWeight: 600 }}>Todavía no has guardado ningún lugar.</h2>
+						<p className="mb-4" style={{ color: "#BDECF1", maxWidth: "34rem" }}>Explora una ciudad y conserva los lugares que quieras visitar más adelante.</p>
+						<Link to="/explorar" className="btn px-4 py-2" style={{ backgroundColor: "#28C3D4", color: "#12343B", borderRadius: 0 }}>Abrir explorar <i className="fa-solid fa-arrow-right ms-2" aria-hidden="true" /></Link>
+					</section>
 				) : (
-					<div className="row g-4">
-						{favoritos.map((favorito) => (
-							<div key={favorito.id} className="col-md-6 col-lg-4">
-								<div
-									className="p-4 h-100"
-									style={{ backgroundColor: "#FFFFFF", borderTop: "3px solid #F5A623", borderRadius: "4px" }}
-								>
-									<div className="d-flex justify-content-between align-items-start">
-										<div>
-											<h3
-												style={{
-													fontFamily: "Fraunces, Georgia, serif",
-													color: "#12343B",
-													fontSize: "1.25rem"
-												}}
+					<div className="row g-4 align-items-stretch">
+						<aside className="col-12 col-lg-4">
+							<div className="h-100 p-4 p-md-5" style={{ backgroundColor: "#12343B", color: "#FFFFFF" }}>
+								<p className="text-uppercase small fw-semibold mb-2" style={{ color: "#8CE3ED", letterSpacing: "0.14em" }}>Organiza tu inspiración</p>
+								<h2 className="h2 mb-4" style={{ fontFamily: "Fraunces, Georgia, serif", fontWeight: 600 }}>Elige una ciudad</h2>
+								<div className="d-flex flex-column" role="tablist" aria-label="Ciudades con favoritos">
+									{ciudades.map((ciudad) => {
+										const activa = ciudad.nombre === ciudadActiva;
+										return (
+											<button
+												key={ciudad.nombre}
+												type="button"
+												role="tab"
+												aria-selected={activa}
+												onClick={() => setCiudadActiva(ciudad.nombre)}
+												className="d-flex justify-content-between align-items-center text-start w-100 py-3 px-0"
+												style={{ color: activa ? "#FFFFFF" : "#BDECF1", backgroundColor: "transparent", border: 0, borderTop: "1px solid rgba(212, 240, 245, 0.22)" }}
 											>
-												{favorito.place?.name || "Lugar sin nombre"}
-											</h3>
-											{favorito.place?.category && (
-												<p style={{ color: "#078A9A", fontSize: "0.85rem" }}>
-													🏷️ {favorito.place.category}
-												</p>
-											)}
-											{favorito.place?.address && (
-												<p style={{ color: "#456B75", fontSize: "0.9rem" }}>
-													📍 {favorito.place.address}
-												</p>
-											)}
-											{favorito.place?.city && (
-												<p style={{ color: "#456B75", fontSize: "0.9rem" }}>
-													🏙️ {favorito.place.city}, {favorito.place.country || ""}
-												</p>
-											)}
-											{favorito.notes && (
-												<p
-													style={{
-														color: "#456B75",
-														fontSize: "0.85rem",
-														fontStyle: "italic"
-													}}
-												>
-													{favorito.notes}
-												</p>
-											)}
-										</div>
-										<button
-											className="btn btn-sm btn-outline-danger"
-											onClick={() => handleEliminarFavorito(favorito.id)}
-											title="Eliminar de favoritos"
-										>
-											❌
-										</button>
-									</div>
-									<div className="mt-3 pt-3 border-top">
-										<Link
-											to={`/explorar/${favorito.place?.slug || favorito.place?.id}`}
-											className="text-decoration-none"
-											style={{ color: "#078A9A", fontSize: "0.85rem" }}
-										>
-											🌍 Ver en explorar
-										</Link>
-									</div>
+												<span><i className={`fa-solid ${activa ? "fa-location-dot" : "fa-arrow-right"} me-3`} aria-hidden="true" />{ciudad.nombre}</span>
+												<span className="small" style={{ color: activa ? "#28C3D4" : "#8CE3ED" }}>{ciudad.lugares.length}</span>
+											</button>
+										);
+									})}
 								</div>
 							</div>
-						))}
+						</aside>
+
+						<section className="col-12 col-lg-8" aria-labelledby="ciudad-favoritos-titulo">
+							<div className="h-100 p-4 p-md-5" style={{ backgroundColor: "#FFFFFF" }}>
+								<div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4 pb-4" style={{ borderBottom: "1px solid #DDECEF" }}>
+									<div>
+										<p className="small text-uppercase fw-semibold mb-2" style={{ color: "#078A9A", letterSpacing: "0.14em" }}>Selección actual</p>
+										<h2 id="ciudad-favoritos-titulo" className="display-6 mb-1" style={{ color: "#12343B", fontFamily: "Fraunces, Georgia, serif", fontWeight: 600 }}>{ciudadActiva}</h2>
+										<p className="mb-0" style={{ color: "#6B8991" }}>{ciudadSeleccionada?.country || ""} · {favoritosVisibles.length} {favoritosVisibles.length === 1 ? "lugar guardado" : "lugares guardados"}</p>
+									</div>
+									<Link to="/explorar" className="small text-decoration-none" style={{ color: "#078A9A" }}>Explorar más <i className="fa-solid fa-arrow-right ms-1" aria-hidden="true" /></Link>
+								</div>
+
+								<div className="row g-4">
+									{favoritosVisibles.map((favorito) => {
+										const lugar = favorito.place;
+										const imagenCiudad = ciudades.find((ciudad) => ciudad.city === lugar.city)?.image;
+										const imagen = lugar.image?.startsWith("http") ? lugar.image : imagenCiudad;
+										const estaConfirmando = confirmando === favorito.id;
+										return (
+											<article key={favorito.id} className="col-12 col-md-6">
+												<div className="h-100 d-flex flex-column" style={{ border: "1px solid #DDECEF", backgroundColor: "#FFFFFF" }}>
+													{imagen && <img loading="lazy" decoding="async" src={imagen} alt={lugar.name || "Lugar guardado"} className="w-100 d-block object-fit-cover" style={{ height: "10rem" }} />}
+													<div className="d-flex flex-column flex-grow-1 p-4">
+														<div className="d-flex justify-content-between gap-3 align-items-start">
+															<div>
+																<p className="small text-uppercase fw-semibold mb-2" style={{ color: "#078A9A", letterSpacing: "0.1em" }}>Lugar guardado</p>
+																<h3 className="h4 mb-2" style={{ color: "#12343B", fontFamily: "Fraunces, Georgia, serif" }}>{lugar.name || "Lugar sin nombre"}</h3>
+															</div>
+															<button type="button" className="btn btn-sm p-0" aria-label={`Quitar ${lugar.name || "este lugar"} de favoritos`} onClick={() => setConfirmando(estaConfirmando ? null : favorito.id)} style={{ color: "#B02A37", border: 0 }}><i className="fa-solid fa-bookmark" aria-hidden="true" /></button>
+														</div>
+														<p className="small mb-3" style={{ color: "#6B8991" }}><i className="fa-solid fa-location-dot me-2" aria-hidden="true" />{lugar.city}, {lugar.country}</p>
+														{lugar.description && <p className="mb-3" style={{ color: "#456B75", lineHeight: 1.6 }}>{lugar.description}</p>}
+														{lugar.bestFor && <p className="small mb-3" style={{ color: "#078A9A" }}><strong>Categoría:</strong> {lugar.bestFor}</p>}
+														<p className="small mt-auto mb-0" style={{ color: "#91AEB5" }}>Guardado {formatearFecha(favorito.created_at)}</p>
+														{estaConfirmando && <div className="mt-3 pt-3 d-flex align-items-center justify-content-between gap-2" style={{ borderTop: "1px solid #DDECEF" }}><span className="small" style={{ color: "#456B75" }}>¿Quitar este lugar?</span><span className="d-flex gap-2"><button type="button" className="btn btn-sm" onClick={() => setConfirmando(null)} disabled={eliminando === favorito.id} style={{ color: "#456B75" }}>No</button><button type="button" className="btn btn-sm" onClick={() => eliminarFavorito(favorito)} disabled={eliminando === favorito.id} style={{ backgroundColor: "#B02A37", color: "#FFFFFF" }}>{eliminando === favorito.id ? "Quitando..." : "Sí, quitar"}</button></span></div>}
+													</div>
+												</div>
+											</article>
+										);
+									})}
+								</div>
+							</div>
+						</section>
 					</div>
 				)}
 			</div>

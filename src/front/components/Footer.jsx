@@ -1,7 +1,7 @@
 export const Footer = () => (
   <footer
     id="footer"
-    className="py-4"
+    className="py-3"
     style={{ backgroundColor: "#12343B", color: "#EAF7FA" }}
   >
     <div className="container d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
@@ -12,7 +12,7 @@ export const Footer = () => (
         Viajero
       </p>
       <p className="mb-0 small text-white-50">
-        Proyecto realizado por Jorge Montiel &amp; Vicente Flores 
+        Proyecto realizado por Jorge Montiel &amp; Vicente Flores
       </p>
       <a
         href="https://github.com/Bisual0/Planificador-de-viajes-Proyecto-Final"

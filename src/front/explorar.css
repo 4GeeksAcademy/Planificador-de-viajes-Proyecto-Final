@@ -1,12 +1,12 @@
 .explorar-page {
 	position: relative;
-	min-height: calc(100vh - 78px);
+	min-height: calc(100vh - 147px);
 }
 
 .explorar-ciudades-panel {
 	display: flex;
 	flex-direction: column;
-	height: 620px;
+	height: min(620px, calc(100vh - 243px));
 	background-color: #EAF7FA;
 	overflow: hidden;
 }
@@ -130,14 +130,6 @@
 	line-height: 1.05;
 }
 
-.explorar-ciudad-titulo strong {
-	font-weight: 600;
-}
-
-.explorar-ciudad-titulo span {
-	font-weight: 400;
-}
-
 .explorar-ciudad-ver-mas {
 	justify-self: end;
 	margin: 0.2rem 0.15rem 0;
@@ -160,12 +152,12 @@
 }
 
 .explorar-mapa-panel {
-	min-height: 620px;
+	min-height: min(620px, calc(100vh - 243px));
 }
 
 .explorar-mapa-wrapper {
 	position: relative;
-	height: 620px;
+	height: min(620px, calc(100vh - 243px));
 	background-color: #000000;
 }
 

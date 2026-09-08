@@ -1,78 +1,84 @@
 # Planificador de viajes
 
-Aplicación web para crear viajes, organizar destinos y actividades, y guardar lugares favoritos.
+Aplicación web para descubrir lugares, crear viajes, organizar actividades y guardar favoritos.
 
-## Tecnologías
+## Stack
 
-- Frontend: React + Vite
-- Backend: Flask
-- Base de datos: PostgreSQL + SQLAlchemy + Flask-Migrate
-- Estado global: Context API con patrón Flux
+- **Frontend:** React, Vite, React Router, Bootstrap, Font Awesome y Leaflet.
+- **Backend:** Flask, Flask-JWT-Extended, Flask-SQLAlchemy, Flask-Migrate y Flask-Mail.
+- **Base de datos:** PostgreSQL.
+- **Integraciones:** Overpass/OpenStreetMap para lugares y Nominatim/OpenStreetMap para direcciones.
 
-## Requisitos locales
+## Requisitos
 
-- Node.js y npm
-- Python 3.13
-- Pipenv
-- PostgreSQL en ejecución
+- Node.js 20 o superior.
+- npm.
+- Python 3.13.
+- Pipenv.
+- PostgreSQL en ejecución.
 
-## Configuración inicial
+## Configuración local
 
-### 1. Instalar dependencias
+1. Instala las dependencias:
 
 ```bash
 npm install
 pipenv install
 ```
 
-### 2. Configurar variables de entorno
-
-Crea tu archivo local a partir del ejemplo:
+2. Crea el archivo local de variables:
 
 ```bash
 cp .env.example .env
 ```
 
-Edita `DATABASE_URL` para tu instalación de PostgreSQL. En Linux, si PostgreSQL permite usar el usuario local mediante socket Unix:
+3. Configura en `.env` los valores de tu entorno. Como mínimo, la aplicación necesita una base PostgreSQL y una URL del backend para el frontend:
 
 ```env
 DATABASE_URL=postgresql:///planificador_viajes_dev
+VITE_BACKEND_URL=http://127.0.0.1:3001
+FRONTEND_URL=http://localhost:3000
 ```
 
-Si tu instalación exige conexión TCP con contraseña, usa una URL con usuario y contraseña:
+Para PostgreSQL con usuario y contraseña:
 
 ```env
 DATABASE_URL=postgresql://TU_USUARIO:TU_CONTRASENA@localhost:5432/planificador_viajes_dev
 ```
 
-> `.env` está ignorado por Git. No subas contraseñas, tokens ni claves al repositorio.
+La configuración de correo requiere además los valores SMTP correspondientes. No subas `.env`, contraseñas, tokens, claves JWT ni cadenas de conexión al repositorio.
 
-### 3. Crear la base de datos local
+4. Crea la base local si todavía no existe:
 
 ```bash
 createdb planificador_viajes_dev
 ```
 
-Si la base ya existe, PostgreSQL mostrará un aviso y puedes continuar.
+## Migraciones
 
-### 4. Crear y aplicar migraciones
+Aplicar las migraciones existentes:
 
-Cuando cambien los modelos en `src/api/models.py`:
+```bash
+pipenv run upgrade
+```
+
+Consultar el estado:
+
+```bash
+pipenv run flask db current
+pipenv run flask db heads
+```
+
+Cuando cambie un modelo, crea una migración y revísala antes de aplicarla:
 
 ```bash
 pipenv run migrate
 pipenv run upgrade
 ```
 
-Para aplicar migraciones que ya existan:
+## Ejecutar la aplicación
 
-```bash
-pipenv run upgrade
-```
-
-### 5. Ejecutar la aplicación
-
-En una terminal, inicia Flask:
+Inicia el backend en una terminal:
 
 ```bash
 pipenv run start
@@ -80,39 +86,79 @@ pipenv run start
 
 El backend queda disponible en `http://127.0.0.1:3001`.
 
-En otra terminal, inicia Vite:
+Inicia el frontend en otra terminal:
 
 ```bash
-npm run dev
+npm run dev -- --host localhost --port 3000
 ```
 
-Vite mostrará la URL local del frontend, normalmente `http://localhost:3000`.
+El frontend queda disponible en `http://localhost:3000`.
 
-## Comprobaciones rápidas
+## Funcionalidades principales
+
+- Registro y login con usuario o correo.
+- Verificación de correo y reenvío de verificación.
+- Recuperación de contraseña mediante correo y enlace con token.
+- Perfil protegido y edición persistente de datos.
+- Exploración de ciudades y lugares en mapa.
+- Búsqueda, filtros y reverse geocoding de direcciones.
+- Creación y organización de viajes y actividades.
+- Favoritos.
+- Panel administrativo protegido por JWT y rol de administrador.
+
+## Destinos iniciales
+
+El catálogo inicial incluye:
+
+- Valparaíso, Chile.
+- San José, Costa Rica.
+- Río de Janeiro, Brasil.
+- Buenos Aires, Argentina.
+- Lima, Perú.
+
+## Comprobaciones
+
+Frontend:
 
 ```bash
 npm run lint
 npm run build
 ```
 
-La salud del backend estará disponible en:
+Backend:
 
-```text
-GET /api/health
+```bash
+pipenv run python -m py_compile src/app.py src/api/routes.py src/api/models.py
 ```
 
-## Destinos iniciales
+También conviene comprobar el endpoint de salud:
 
-Durante el MVP, los destinos disponibles inicialmente son:
+```bash
+curl http://127.0.0.1:3001/api/health
+```
 
-- Valparaíso, Chile
-- San José, Costa Rica
-- Río de Janeiro, Brasil
-- Buenos Aires, Argentina
-- Lima, Perú
+## Estructura principal
 
-La selección y las pruebas de las APIs externas de ciudades, lugares y mapas se documentarán como la última tarea de EN-01.
+```text
+src/
+├── api/                  # Aplicación Flask, modelos, comandos y servicios externos
+├── front/
+│   ├── components/       # Componentes reutilizables
+│   ├── data/             # Catálogo inicial y metadatos de lugares
+│   ├── pages/            # Pantallas y rutas de la aplicación
+│   ├── utils/            # Sesión y normalización de errores
+│   └── routes.jsx        # Configuración de rutas React
+├── app.py                # Configuración y arranque Flask
+└── wsgi.py               # Entrada para servidores WSGI
+migrations/               # Historial de cambios de base de datos
+index.html                # Entrada de Vite
+package.json              # Scripts y dependencias frontend
+Pipfile                  # Dependencias y comandos backend
+render.yaml              # Configuración de despliegue
+```
 
-## Modelo actual
+## Seguridad y despliegue
 
-El proyecto incluye los modelos `User`, `Trip`, `Destination`, `Activity`, `Place` y `Favorite`. Antes de implementar endpoints o pantallas, las modificaciones de los modelos deben ir acompañadas de su migración correspondiente.
+El despliegue todavía no forma parte de esta fase. Antes de desplegar hay que revisar variables de entorno, CORS, secretos, migraciones, correo SMTP, build frontend, servicio WSGI y configuración de la plataforma.
+
+Nunca uses credenciales compartidas durante pruebas ni las guardes en archivos versionados, capturas, logs o documentación.

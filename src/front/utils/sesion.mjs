@@ -10,7 +10,7 @@ const renovarToken = async () => {
 
 	renovacionEnCurso = fetch(`${obtenerUrlApi()}/refresh`, {
 		method: "POST",
-		headers: { Authorization: `Bearer ${refreshToken}` },
+			headers: { Authorization: `Bearer ${refreshToken}` },
 	})
 		.then(async (respuesta) => {
 			const datos = await respuesta.json().catch(() => ({}));

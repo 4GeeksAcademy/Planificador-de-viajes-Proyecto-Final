@@ -19,7 +19,9 @@ class User(db.Model):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True)
     is_verified: Mapped[bool] = mapped_column(default=False)
+    is_admin: Mapped[bool] = mapped_column(default=False, nullable=False)
     verification_token: Mapped[str] = mapped_column(String(500), nullable=True)
+    verification_token_expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     verified_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     trips: Mapped[List["Trip"]] = relationship(
@@ -35,7 +37,8 @@ class User(db.Model):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "is_active": self.is_active,
-            "is_verififed": self.is_verified,
+            "is_verified": self.is_verified,
+            "is_admin": self.is_admin,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "verified_at": self.verified_at.isoformat() if self.verified_at else None
             }
@@ -136,6 +139,10 @@ class Place(db.Model):
     latitude: Mapped[float] = mapped_column(nullable=True)
     longitude: Mapped[float] = mapped_column(nullable=True)
     best_for: Mapped[str] = mapped_column(String(255))
+    place_ref: Mapped[str] = mapped_column(String(160), nullable=True)
+    place_category: Mapped[str] = mapped_column(String(80), nullable=True)
+    place_address: Mapped[str] = mapped_column(String(255), nullable=True)
+    place_source: Mapped[str] = mapped_column(String(80), nullable=True)
     
     favorites: Mapped[List["Favorite"]] = relationship(
         back_populates="place", cascade="all, delete-orphan"
@@ -144,6 +151,7 @@ class Place(db.Model):
     def serialize(self):
         return {
             "id": self.id,
+            "name": self.name,
             "slug": self.slug,
             "city": self.city,
             "country": self.country,
@@ -152,8 +160,15 @@ class Place(db.Model):
             "latitude": self.latitude,
             "longitude": self.longitude,
             "description": self.description,
-            "bestFor": self.best_for  # Nota: bestFor en frontend, best_for en backend
+            "bestFor": self.best_for,
+            "place_ref": self.place_ref,
+            "place_category": self.place_category,
+            "place_address": self.place_address,
+            "place_source": self.place_source,
+            "category": self.place_category,
+            "address": self.place_address
         }
+
 
 class Favorite(db.Model):
     __tablename__ = "favorite"
@@ -176,6 +191,7 @@ class Favorite(db.Model):
     def serialize(self):
         return {
             "id": self.id,
+            "place_id": self.place_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "place": self.place.serialize() if self.place else None
         }

@@ -119,16 +119,6 @@ export const CrearViaje = () => {
 								className="col-lg-7 p-4 p-lg-5"
 								style={{ backgroundColor: "#FFFFFF" }}
 							>
-								<p
-									className="mb-2 text-uppercase fw-semibold"
-									style={{
-										color: "#078A9A",
-										letterSpacing: "0.14em",
-										fontSize: "0.75rem"
-									}}
-								>
-									Tu próxima aventura
-								</p>
 								<h1
 									className="display-6 mb-3"
 									style={estiloTitulo}
@@ -264,16 +254,6 @@ export const CrearViaje = () => {
 									className="p-4"
 									style={{ borderLeft: "3px solid #28C3D4" }}
 								>
-									<p
-										className="mb-2 text-uppercase fw-semibold"
-										style={{
-											color: "#28C3D4",
-											letterSpacing: "0.14em",
-											fontSize: "0.75rem"
-										}}
-									>
-										Un itinerario a tu medida
-									</p>
 									<h2
 										className="h1 mb-3"
 										style={{ ...estiloTitulo, color: "#FFFFFF" }}

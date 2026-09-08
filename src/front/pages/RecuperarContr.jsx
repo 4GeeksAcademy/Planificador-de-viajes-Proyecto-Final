@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { FormularioNuevaContrasena } from "../components/FormularioNuevaContrasena";
 import { useSplitEntrance } from "../animaciones/useSplitEntrance";
+import { obtenerMensajeErrorBackend } from "../utils/autenticacion.mjs";
 
 const estiloTitulo = {
   fontFamily: "Fraunces, Georgia, serif",
@@ -16,47 +16,37 @@ const estiloInput = {
   padding: "0.75rem 0.9rem",
 };
 
-const validarNuevaContrasena = (contrasena, confirmacion) => {
-  if (contrasena !== confirmacion) {
-    return "Las contraseñas no coinciden.";
-  }
-
-  return "";
-};
-
 export const RecuperarContr = () => {
   const [correo, setCorreo] = useState("");
   const [solicitudLista, setSolicitudLista] = useState(false);
-  const [nuevaContrasena, setNuevaContrasena] = useState("");
-  const [confirmacion, setConfirmacion] = useState("");
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
+  const [cargando, setCargando] = useState(false);
   const layoutRef = useRef(null);
 
-  const manejarSolicitud = (event) => {
+  const manejarSolicitud = async (event) => {
     event.preventDefault();
-    setSolicitudLista(true);
     setError("");
     setMensaje("");
-  };
+    setCargando(true);
 
-  const manejarRestablecimiento = (event) => {
-    event.preventDefault();
-    const errorValidacion = validarNuevaContrasena(
-      nuevaContrasena,
-      confirmacion,
-    );
-
-    if (errorValidacion) {
-      setError(errorValidacion);
-      setMensaje("");
-      return;
+    try {
+      const respuesta = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: correo }),
+      });
+      const datos = await respuesta.json().catch(() => ({}));
+      if (!respuesta.ok) {
+        throw new Error(obtenerMensajeErrorBackend(datos, "No fue posible solicitar la recuperación."));
+      }
+      setSolicitudLista(true);
+      setMensaje(datos.message || "Si el correo está registrado, recibirás un enlace de recuperación.");
+    } catch (errorDeRed) {
+      setError(errorDeRed.message || "No fue posible conectar con el servidor.");
+    } finally {
+      setCargando(false);
     }
-
-    setError("");
-    setMensaje(
-      "La nueva contraseña está lista para enviarse cuando el endpoint backend esté disponible.",
-    );
   };
 
   useSplitEntrance(layoutRef);
@@ -98,13 +88,14 @@ export const RecuperarContr = () => {
                 )}
 
                 {solicitudLista ? (
-                  <FormularioNuevaContrasena
-                    nuevaContrasena={nuevaContrasena}
-                    setNuevaContrasena={setNuevaContrasena}
-                    confirmacion={confirmacion}
-                    setConfirmacion={setConfirmacion}
-                    manejarRestablecimiento={manejarRestablecimiento}
-                  />
+                  <div>
+                    <h1 className="display-6 mb-3" style={estiloTitulo}>
+                      Revisa tu correo
+                    </h1>
+                    <p className="mb-4" style={{ color: "#456B75", lineHeight: 1.6 }}>
+                      Abre el enlace recibido para establecer una nueva contraseña.
+                    </p>
+                  </div>
                 ) : (
                   <form onSubmit={manejarSolicitud}>
                     <h1 className="display-6 mb-3" style={estiloTitulo}>
@@ -137,13 +128,14 @@ export const RecuperarContr = () => {
                     <button
                       type="submit"
                       className="btn w-100 py-3"
+                      disabled={cargando}
                       style={{
                         backgroundColor: "#12343B",
                         color: "#FFFFFF",
                         borderRadius: 0,
                       }}
                     >
-                      Solicitar recuperación
+                      {cargando ? "Enviando solicitud..." : "Solicitar recuperación"}
                     </button>
                   </form>
                 )}

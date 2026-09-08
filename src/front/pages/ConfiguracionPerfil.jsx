@@ -1,5 +1,7 @@
-import React, { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { fetchConSesion } from "../utils/sesion.mjs";
+import { obtenerMensajeErrorBackend } from "../utils/autenticacion.mjs";
 
 const obtenerUsuarioGuardado = () => {
 	try {
@@ -25,17 +27,65 @@ export const ConfiguracionPerfil = () => {
 		email: usuarioGuardado.email || "",
 	});
 	const [guardado, setGuardado] = useState(false);
+	const [cargando, setCargando] = useState(true);
+	const [guardando, setGuardando] = useState(false);
+	const [error, setError] = useState("");
 
 	const manejarCambio = ({ target }) => {
 		setGuardado(false);
+		setError("");
 		setFormulario((actual) => ({ ...actual, [target.name]: target.value }));
 	};
 
-	const manejarGuardado = (evento) => {
+	useEffect(() => {
+		const cargarPerfil = async () => {
+			try {
+				const respuesta = await fetchConSesion(`${import.meta.env.VITE_BACKEND_URL}/api/profile`);
+				const datos = await respuesta.json().catch(() => ({}));
+				if (!respuesta.ok) throw new Error(obtenerMensajeErrorBackend(datos, "No fue posible cargar tu perfil."));
+				setFormulario({
+					first_name: datos.user.first_name || "",
+					last_name: datos.user.last_name || "",
+					username: datos.user.username || "",
+					email: datos.user.email || "",
+				});
+				localStorage.setItem("user", JSON.stringify(datos.user));
+			} catch (errorDeRed) {
+				setError(errorDeRed.message || "No fue posible cargar tu perfil.");
+			} finally {
+				setCargando(false);
+			}
+		};
+		cargarPerfil();
+	}, []);
+
+	const manejarGuardado = async (evento) => {
 		evento.preventDefault();
-		localStorage.setItem("user", JSON.stringify({ ...usuarioGuardado, ...formulario }));
-		window.dispatchEvent(new Event("sesion-cambiada"));
-		setGuardado(true);
+		setGuardando(true);
+		setGuardado(false);
+		setError("");
+		try {
+			const respuesta = await fetchConSesion(`${import.meta.env.VITE_BACKEND_URL}/api/profile`, {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(formulario),
+			});
+			const datos = await respuesta.json().catch(() => ({}));
+			if (!respuesta.ok) throw new Error(obtenerMensajeErrorBackend(datos, "No fue posible guardar los cambios."));
+			localStorage.setItem("user", JSON.stringify(datos.user));
+			window.dispatchEvent(new Event("sesion-cambiada"));
+			setFormulario({
+				first_name: datos.user.first_name || "",
+				last_name: datos.user.last_name || "",
+				username: datos.user.username || "",
+				email: datos.user.email || "",
+			});
+			setGuardado(true);
+		} catch (errorDeRed) {
+			setError(errorDeRed.message || "No fue posible guardar los cambios.");
+		} finally {
+			setGuardando(false);
+		}
 	};
 
 	return (
@@ -64,6 +114,8 @@ export const ConfiguracionPerfil = () => {
 					{/* Hoja de trabajo */}
 					<section className="col-12 col-lg-9">
 						<div className="p-4 p-md-5" style={{ backgroundColor: "#FFFFFF", border: "1px solid #DDECEF" }}>
+							{error && <div className="alert alert-danger rounded-0" role="alert">{error}</div>}
+							{cargando ? <p style={{ color: "#6B8991" }}>Cargando perfil...</p> : (
 							<form onSubmit={manejarGuardado}>
 								{/* Datos personales */}
 								<section id="datos" className="pb-5" style={{ scrollMarginTop: "2rem" }}>
@@ -87,10 +139,11 @@ export const ConfiguracionPerfil = () => {
 
 								{/* Acciones */}
 								<footer className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mt-5 pt-4" style={{ borderTop: "1px solid #DDECEF" }}>
-									{guardado ? <span role="status" className="small" style={{ color: "#078A9A" }}><i className="fa-solid fa-check me-2" aria-hidden="true" />Cambios guardados en este navegador.</span> : <span className="small" style={{ color: "#6B8991" }}>Puedes actualizar estos datos cuando quieras.</span>}
+									{guardado && <span role="status" className="small" style={{ color: "#078A9A" }}><i className="fa-solid fa-check me-2" aria-hidden="true" />Cambios guardados.</span>}
 									<div className="d-flex gap-2"><Link to="/perfil" className="btn px-3 py-2" style={{ color: "#12343B", border: "1px solid #B8DCE3", borderRadius: 0 }}>Cancelar</Link><button type="submit" className="btn px-3 py-2" style={{ color: "#FFFFFF", backgroundColor: "#12343B", borderRadius: 0 }}>Guardar cambios</button></div>
 								</footer>
 							</form>
+							)}
 						</div>
 					</section>
 				</div>

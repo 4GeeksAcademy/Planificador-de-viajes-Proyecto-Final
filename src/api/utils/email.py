@@ -8,14 +8,9 @@ logger = logging.getLogger(__name__)
 
 
 def enviar_correo_verificacion(email, token):
-    # 1️⃣ CONSTRUIR LA URL DE VERIFICACIÓN
-    frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5173')
+    frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:3000')
     verification_url = f"{frontend_url}/verificar/{token}"
-    
-    print(f"📧 Enviando correo a: {email}")
-    print(f"🔗 URL de verificación: {verification_url}")
-    
-    # 2️⃣ CREAR EL CONTENIDO HTML DEL CORREO
+
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -44,7 +39,7 @@ def enviar_correo_verificacion(email, token):
     <body>
         <div class="wrapper">
             <div class="header">
-                <span class="logo">✈️ VIAJERO</span>
+                <span class="logo">VIAJERO</span>
             </div>
             <div class="accent-bar"></div>
             <div class="content">
@@ -52,10 +47,10 @@ def enviar_correo_verificacion(email, token):
                 <p>Hola, gracias por crear tu cuenta en Viajero. Antes de continuar, necesitamos confirmar que esta dirección de correo te pertenece.</p>
 
                 <div class="button-wrap">
-                    <a href="{verification_url}" class="button">✅ Confirmar mi correo</a>
+                    <a href="{verification_url}" class="button">Confirmar mi correo</a>
                 </div>
 
-                <div class="expiry-note">⏰ Este enlace es válido durante <strong>1 hora</strong> por motivos de seguridad.</div>
+                <div class="expiry-note">Este enlace es válido durante <strong>1 hora</strong> por motivos de seguridad.</div>
 
                 <hr class="divider">
 
@@ -73,10 +68,9 @@ def enviar_correo_verificacion(email, token):
     </html>
     """
     
-    # 3️⃣ CREAR Y ENVIAR EL MENSAJE
     try:
         msg = Message(
-            subject="🔐 Verifica tu correo electrónico - Viajero",
+            subject="Verifica tu correo electrónico - Viajero",
             recipients=[email],
             html=html_content,
             sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'no-reply@viajero.com')
@@ -86,25 +80,22 @@ def enviar_correo_verificacion(email, token):
         
         if mail:
             mail.send(msg)
-            logger.info(f"✅ Correo enviado a: {email}")
+            logger.info(f"Correo enviado a: {email}")
             return True
         else:
-            logger.error("❌ Flask-Mail no está configurado")
+            logger.error("Flask-Mail no está configurado")
             return False
             
     except Exception as e:
-        logger.error(f"❌ Error al enviar correo: {str(e)}")
+        logger.error(f"Error al enviar correo: {str(e)}")
         return False
     
 def enviar_correo_recuperacion(email, token):
     #enviar correo con el enlace para restablecer constraseña
     
     #Url de recuperación
-    frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5173')
+    frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:3000')
     reset_url = f"{frontend_url}/reset-password/{token}"
-    
-    print(f"Enviando correo de recuperación a: {email}")
-    print(f"URL para resetear: {reset_url}")
     
     #crear contenido HTML
     html_content = f"""
@@ -135,7 +126,7 @@ def enviar_correo_recuperacion(email, token):
     <body>
         <div class="wrapper">
             <div class="header">
-                <span class="logo">✈️ VIAJERO</span>
+                <span class="logo">VIAJERO</span>
             </div>
             <div class="accent-bar"></div>
             <div class="content">
@@ -146,7 +137,7 @@ def enviar_correo_recuperacion(email, token):
                     <a href="{reset_url}" class="button">🔄 Restablecer contraseña</a>
                 </div>
 
-                <div class="expiry-note">⏰ Este enlace es válido durante <strong>1 hora</strong> por motivos de seguridad.</div>
+                <div class="expiry-note">Este enlace es válido durante <strong>1 hora</strong> por motivos de seguridad.</div>
 
                 <hr class="divider">
 
