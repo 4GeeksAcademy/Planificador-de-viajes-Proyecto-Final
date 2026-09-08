@@ -3,6 +3,7 @@
 set -o errexit
 
 npm ci
+npm install
 npm run build
 
 python -m pip install pipenv
