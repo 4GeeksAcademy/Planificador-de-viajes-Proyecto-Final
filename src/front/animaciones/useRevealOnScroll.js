@@ -5,45 +5,44 @@ import ScrollTrigger from "gsap/ScrollTrigger";
 gsap.registerPlugin(ScrollTrigger);
 
 export const useRevealOnScroll = (
-    targetRef,
-    direction = "left",
-    options = {}
+	targetRef,
+	direction = "left",
+	options = {},
 ) => {
-    const{
-        distance = 120,
-        duration = 1,
-        delay = 0,
-        start = "top 85%",
-        once = true
-    } = options
+	const {
+		distance = 120,
+		duration = 1,
+		delay = 0,
+		start = "top 85%",
+		once = true,
+	} = options;
 
-    useGSAP(
-        () => {
-            const element = targetRef.current;
+	useGSAP(() => {
+		const element = targetRef.current;
+		const movimientoReducido = window.matchMedia(
+			"(prefers-reduced-motion: reduce)",
+		).matches;
 
-            if (!element){
-                return;
-            }
+		if (!element || movimientoReducido) return undefined;
 
-            const initialX = direction === "right" ? distance : -distance;
+		const initialX = direction === "right" ? distance : -distance;
+		const entrada = gsap.from(element, {
+			x: initialX,
+			opacity: 0,
+			duration,
+			delay,
+			ease: "power3.out",
+			scrollTrigger: {
+				trigger: element,
+				start,
+				once,
+			},
+		});
 
-            gsap.from(element, {
-                x: initialX,
-                opacity: 0,
-                duration,
-                delay,
-                ease: "power3.out",
-                scrollTrigger:{
-                    trigger: element,
-                    start,
-                    once,
-                }
-            })
-        },
-        {
-            dependencies: [direction, distance, duration, delay, start, once],
-            scope: targetRef,
-            revertOnUpdate: true
-        }
-    )
-}
+		return () => entrada.kill();
+	}, {
+		dependencies: [direction, distance, duration, delay, start, once],
+		scope: targetRef,
+		revertOnUpdate: true,
+	});
+};

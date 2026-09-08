@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, ForeignKey, Date, Time, Text, DateTime, UniqueConstraint, func
+from sqlalchemy import String, ForeignKey, Date, Time, Text, DateTime, Float, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import date as dt_date, time as dt_time, datetime
 from typing import List
@@ -18,6 +18,12 @@ class User(db.Model):
         String(120), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True)
+    is_verified: Mapped[bool] = mapped_column(default=False)
+    is_admin: Mapped[bool] = mapped_column(default=False, nullable=False)
+    verification_token: Mapped[str] = mapped_column(String(500), nullable=True)
+    verification_token_expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    verified_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     trips: Mapped[List["Trip"]] = relationship(
         back_populates="user", cascade="all, delete-orphan")
     favorites: Mapped[List["Favorite"]] = relationship(
@@ -30,8 +36,12 @@ class User(db.Model):
             "email": self.email,
             "first_name": self.first_name,
             "last_name": self.last_name,
-            "is_active": self.is_active
-        }
+            "is_active": self.is_active,
+            "is_verified": self.is_verified,
+            "is_admin": self.is_admin,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "verified_at": self.verified_at.isoformat() if self.verified_at else None
+            }
 
 
 class Trip(db.Model):
@@ -85,6 +95,14 @@ class Activity(db.Model):
     time: Mapped[dt_time] = mapped_column(Time)
     date: Mapped[dt_date] = mapped_column(Date)
     notes: Mapped[str] = mapped_column(Text)
+    # Snapshot of the provider place selected from the map.
+    place_ref: Mapped[str] = mapped_column(String(160), nullable=True)
+    place_category: Mapped[str] = mapped_column(String(80), nullable=True)
+    place_address: Mapped[str] = mapped_column(String(255), nullable=True)
+    place_city: Mapped[str] = mapped_column(String(120), nullable=True)
+    place_source: Mapped[str] = mapped_column(String(80), nullable=True)
+    place_latitude: Mapped[float] = mapped_column(Float, nullable=True)
+    place_longitude: Mapped[float] = mapped_column(Float, nullable=True)
     destination_id: Mapped[int] = mapped_column(
         ForeignKey("destination.id", ondelete="CASCADE")
     )
@@ -97,7 +115,14 @@ class Activity(db.Model):
             "name": self.name,
             "time": self.time.isoformat() if self.time else None,
             "date": self.date.isoformat() if self.date else None,
-            "notes": self.notes
+            "notes": self.notes,
+            "place_id": self.place_ref,
+            "place_category": self.place_category,
+            "place_address": self.place_address,
+            "place_city": self.place_city,
+            "place_source": self.place_source,
+            "place_latitude": self.place_latitude,
+            "place_longitude": self.place_longitude
         }
 
 
@@ -107,6 +132,18 @@ class Place(db.Model):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     country: Mapped[str] = mapped_column(String(120), nullable=False)
     description: Mapped[str] = mapped_column(Text)
+    slug: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    city: Mapped[str] = mapped_column(String(120), nullable=False)
+    region: Mapped[str] = mapped_column(String(120))
+    image: Mapped[str] = mapped_column(String(255))
+    latitude: Mapped[float] = mapped_column(nullable=True)
+    longitude: Mapped[float] = mapped_column(nullable=True)
+    best_for: Mapped[str] = mapped_column(String(255))
+    place_ref: Mapped[str] = mapped_column(String(160), nullable=True)
+    place_category: Mapped[str] = mapped_column(String(80), nullable=True)
+    place_address: Mapped[str] = mapped_column(String(255), nullable=True)
+    place_source: Mapped[str] = mapped_column(String(80), nullable=True)
+    
     favorites: Mapped[List["Favorite"]] = relationship(
         back_populates="place", cascade="all, delete-orphan"
     )
@@ -115,8 +152,21 @@ class Place(db.Model):
         return {
             "id": self.id,
             "name": self.name,
+            "slug": self.slug,
+            "city": self.city,
             "country": self.country,
-            "description": self.description
+            "region": self.region,
+            "image": self.image,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "description": self.description,
+            "bestFor": self.best_for,
+            "place_ref": self.place_ref,
+            "place_category": self.place_category,
+            "place_address": self.place_address,
+            "place_source": self.place_source,
+            "category": self.place_category,
+            "address": self.place_address
         }
 
 
@@ -141,6 +191,7 @@ class Favorite(db.Model):
     def serialize(self):
         return {
             "id": self.id,
+            "place_id": self.place_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "place": self.place.serialize() if self.place else None
         }

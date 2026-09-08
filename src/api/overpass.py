@@ -117,13 +117,26 @@ def _normalizar_elemento(elemento, categorias):
     if not tags.get("name") or latitud is None or longitud is None:
         return None
 
+    calle = tags.get("addr:street")
+    numero = tags.get("addr:housenumber")
+    ciudad = tags.get("addr:city")
+    partes_calle = " ".join(parte for parte in (calle, numero) if parte)
+    partes_direccion = [parte for parte in (partes_calle, ciudad) if parte]
+    direccion = ", ".join(partes_direccion) or "Dirección no disponible"
+
     return {
         "id": "{}/{}".format(elemento.get("type"), elemento.get("id")),
         "category": categoria,
         "name": tags["name"],
         "latitude": latitud,
         "longitude": longitud,
-        "address": tags.get("addr:street", "Dirección no disponible"),
+        "address": direccion,
+        "website": tags.get("contact:website") or tags.get("website"),
+        "instagram": tags.get("contact:instagram") or tags.get("instagram"),
+        "opening_hours": tags.get("opening_hours"),
+        "phone": tags.get("contact:phone") or tags.get("phone"),
+        "source": "OpenStreetMap",
+        "source_updated_at": elemento.get("timestamp"),
     }
 
 

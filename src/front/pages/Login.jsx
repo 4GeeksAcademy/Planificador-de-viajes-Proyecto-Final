@@ -9,12 +9,6 @@ const estiloTitulo = {
 	color: "#12343B"
 };
 
-const estiloEtiqueta = {
-	color: "#078A9A",
-	letterSpacing: "0.14em",
-	fontSize: "0.75rem"
-};
-
 const estiloInput = {
 	border: "1px solid #B8DCE3",
 	borderRadius: 0,
@@ -25,9 +19,13 @@ const estiloInput = {
 export const Login = () => {
 	const navigate = useNavigate();
 	const [formulario, setFormulario] = useState({ identifier: "", password: "" });
+	const [mostrarPassword, setMostrarPassword] = useState(false);
 	const [cargando, setCargando] = useState(false);
 	const [error, setError] = useState("");
-	const layoutRef = useRef(null)
+	const [mensaje, setMensaje] = useState("");
+	const [emailPendienteVerificacion, setEmailPendienteVerificacion] = useState("");
+	const [reenviandoVerificacion, setReenviandoVerificacion] = useState(false);
+	const layoutRef = useRef(null);
 
 	const manejarCambio = (event) => {
 		const { name, value } = event.target;
@@ -38,6 +36,8 @@ export const Login = () => {
 		event.preventDefault();
 		setCargando(true);
 		setError("");
+		setMensaje("");
+		setEmailPendienteVerificacion("");
 
 		try {
 			const respuesta = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/login`, {
@@ -49,10 +49,14 @@ export const Login = () => {
 			const datos = await respuesta.json();
 
 			if (!respuesta.ok) {
+				if (datos.requires_verification && datos.email) {
+					setEmailPendienteVerificacion(datos.email);
+				}
 				throw new Error(obtenerMensajeErrorBackend(datos, "No fue posible iniciar sesión."));
 			}
 
 			localStorage.setItem("token", datos.token);
+			localStorage.setItem("refresh_token", datos.refresh_token);
 			localStorage.setItem("user", JSON.stringify(datos.user));
 			window.dispatchEvent(new Event("sesion-cambiada"));
 			navigate("/");
@@ -63,19 +67,41 @@ export const Login = () => {
 		}
 	};
 
-	useSplitEntrance(layoutRef)
+	const reenviarVerificacion = async () => {
+		setReenviandoVerificacion(true);
+		setError("");
+		setMensaje("");
+
+		try {
+			const respuesta = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/resend-verification`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email: emailPendienteVerificacion }),
+			});
+			const datos = await respuesta.json().catch(() => ({}));
+
+			if (!respuesta.ok) {
+				throw new Error(obtenerMensajeErrorBackend(datos, "No fue posible reenviar el correo."));
+			}
+
+			setMensaje(datos.message || "Se envió un nuevo correo de verificación.");
+		} catch (errorDeRed) {
+			setError(errorDeRed.message || "No fue posible conectar con el servidor.");
+		} finally {
+			setReenviandoVerificacion(false);
+		}
+	};
+
+	useSplitEntrance(layoutRef);
 
 	return (
 		<main className="min-vh-100 d-flex align-items-center py-5" style={{ backgroundColor: "#EAF7FA" }}>
 			<div className="container">
 				<div className="row justify-content-center">
-					<div className="col-lg-10 col-xl-9">
+					<div className="col-12 col-md-8 col-lg-6">
 						<div className="row g-0 shadow-sm" ref={layoutRef}>
 							{/* Formulario de Login */}
-							<section className="col-lg-6 p-4 p-lg-5 split-left" style={{ backgroundColor: "#FFFFFF" }}>
-								<p className="mb-2 text-uppercase fw-semibold" style={estiloEtiqueta}>
-									Bienvenido de nuevo
-								</p>
+							<section className="col-12 p-4 p-lg-5 split-left" style={{ backgroundColor: "#FFFFFF" }}>
 								<h1 className="display-6 mb-3" style={estiloTitulo}>
 									Inicia sesión
 								</h1>
@@ -87,6 +113,22 @@ export const Login = () => {
 									<div className="alert alert-danger rounded-0" role="alert">
 										{error}
 									</div>
+								)}
+								{mensaje && (
+									<div className="alert alert-success rounded-0" role="status">
+										{mensaje}
+									</div>
+								)}
+								{emailPendienteVerificacion && (
+									<button
+										type="button"
+										className="btn btn-sm rounded-0 mb-4"
+										onClick={reenviarVerificacion}
+										disabled={reenviandoVerificacion}
+										style={{ color: "#078A9A", border: "1px solid #078A9A" }}
+									>
+										{reenviandoVerificacion ? "Enviando..." : "Reenviar verificación"}
+									</button>
 								)}
 
 								<form onSubmit={manejarEnvio}>
@@ -110,17 +152,29 @@ export const Login = () => {
 										<label htmlFor="login-password" className="form-label small fw-semibold" style={{ color: "#12343B" }}>
 											Contraseña
 										</label>
-										<input
-											id="login-password"
-											name="password"
-											type="password"
-											required
-											value={formulario.password}
-											onChange={manejarCambio}
-											className="form-control"
-											placeholder="Escribe tu contraseña"
-											style={estiloInput}
-										/>
+										<div className="input-group">
+											<input
+												id="login-password"
+												name="password"
+												type={mostrarPassword ? "text" : "password"}
+												required
+												value={formulario.password}
+												onChange={manejarCambio}
+												className="form-control"
+												placeholder="Escribe tu contraseña"
+												style={estiloInput}
+											/>
+											<button
+												type="button"
+												className="btn"
+												onClick={() => setMostrarPassword((actual) => !actual)}
+												aria-label={mostrarPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+												aria-pressed={mostrarPassword}
+												style={{ border: "1px solid #B8DCE3", color: "#078A9A" }}
+											>
+												<i className={`fa-solid ${mostrarPassword ? "fa-eye-slash" : "fa-eye"}`} aria-hidden="true" />
+											</button>
+										</div>
 									</div>
 									<div className="d-flex justify-content-end mb-4">
 										<Link
@@ -148,22 +202,7 @@ export const Login = () => {
 									</Link>
 								</p>
 							</section>
-
-							{/* Mensaje de apoyo */}
-							<section className="col-lg-6 d-none d-lg-flex align-items-center p-5 split-right" style={{ backgroundColor: "#12343B" }}>
-								<div className="p-4" style={{ borderLeft: "3px solid #28C3D4" }}>
-									<p className="mb-2 text-uppercase fw-semibold" style={{ ...estiloEtiqueta, color: "#28C3D4" }}>
-										Viajero
-									</p>
-									<h2 className="h1 mb-3" style={{ ...estiloTitulo, color: "#FFFFFF" }}>
-										Menos pasos, más lugares por descubrir.
-									</h2>
-									<p className="mb-0" style={{ color: "#D4F0F5", lineHeight: 1.7 }}>
-										Recupera tus itinerarios y continúa planificando desde cualquier lugar.
-									</p>
-								</div>
-							</section>
-						</div>
+							</div>
 					</div>
 				</div>
 			</div>

@@ -16,6 +16,7 @@ export const ciudades = [
 		longitude: -71.6196749,
 		description: "Una ciudad portuaria de cerros coloridos, ascensores históricos y una intensa vida cultural frente al Pacífico.",
 		bestFor: "Arte, miradores y paseos junto al mar",
+		id: 1
 	},
 	{
 		slug: "san-jose-costa-rica",
@@ -27,6 +28,7 @@ export const ciudades = [
 		longitude: -84.0796144,
 		description: "La capital costarricense combina museos, mercados, arquitectura histórica y una puerta de entrada a la naturaleza del país.",
 		bestFor: "Cultura, gastronomía y escapadas naturales",
+		id: 2
 	},
 	{
 		slug: "rio-de-janeiro-brasil",
@@ -38,6 +40,7 @@ export const ciudades = [
 		longitude: -43.2093727,
 		description: "Una ciudad de playas, montañas y barrios llenos de ritmo, con paisajes reconocibles y muchas formas de explorar.",
 		bestFor: "Playas, naturaleza y vida urbana",
+		id: 3
 	},
 	{
 		slug: "buenos-aires-argentina",
@@ -49,6 +52,7 @@ export const ciudades = [
 		longitude: -58.3887904,
 		description: "Una capital de barrios con personalidad, cafés, librerías, arquitectura y una agenda cultural que nunca se detiene.",
 		bestFor: "Gastronomía, cultura y arquitectura",
+		id: 4
 	},
 	{
 		slug: "lima-peru",
@@ -60,6 +64,7 @@ export const ciudades = [
 		longitude: -77.0305912,
 		description: "La capital peruana reúne patrimonio histórico, cocina reconocida y una extensa costa para recorrer con calma.",
 		bestFor: "Historia, comida y costa",
+		id: 5
 	},
 ];
 

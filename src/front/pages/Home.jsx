@@ -73,6 +73,8 @@ const TarjetaDestino = ({ destination, large = false }) => {
             src={destination.image}
             alt={`${destination.city}, ${destination.country}`}
             className="w-100 h-100 object-fit-cover d-block"
+            loading="lazy"
+            decoding="async"
             style={{
               transform:
                 destination.city === "Valparaíso" ? "scale(1.12)" : "scale(1)",
@@ -136,7 +138,7 @@ export const Home = () => {
   })
 
   return (
-    <main style={{ backgroundColor: "#FFFFFF", color: "#12343B" }}>
+    <main style={{ backgroundColor: "#FFFFFF", color: "#12343B", overflowX: "clip" }}>
       {/* Hero */}
       <section
         className="container-fluid px-0"
@@ -214,6 +216,8 @@ export const Home = () => {
                   <img
                     src={destination.image}
                     alt={`${destination.city}, ${destination.country}`}
+                    loading={destination === destinations[activeDestination] ? "eager" : "lazy"}
+                    decoding="async"
                     className="w-100 h-100 object-fit-cover position-absolute top-0 start-0"
                     style={{
                       transform:
@@ -302,16 +306,6 @@ export const Home = () => {
         <div className="container pt-5">
           <div className="d-flex justify-content-between align-items-end mb-4 gap-3">
             <div>
-              <p
-                className="text-uppercase fw-semibold mb-2"
-                style={{
-                  color: "#078A9A",
-                  letterSpacing: "0.14em",
-                  fontSize: "0.75rem",
-                }}
-              >
-                Inspírate
-              </p>
               <h2
                 className="display-6 mb-0"
                 style={{
@@ -353,18 +347,8 @@ export const Home = () => {
         style={{ backgroundColor: "#FFFFFF" }}
       >
         <div className="container">
-          <p
-            className="text-uppercase fw-semibold mb-2"
-            style={{
-              color: "#078A9A",
-              letterSpacing: "0.14em",
-              fontSize: "0.75rem",
-            }}
-          >
-            Variación 3 · Banner Contraste Oscuro
-          </p>
           <h2
-            className="display-6 mb-5"
+            className="display-6 mb-4"
             style={{
               fontFamily: "Fraunces, Georgia, serif",
               color: "#12343B",

@@ -6,6 +6,7 @@ import {
 	validarFechaInicioViaje,
 } from "../utils/viajes.mjs";
 import { obtenerMensajeErrorBackend } from "../utils/autenticacion.mjs";
+import { fetchConSesion } from "../utils/sesion.mjs";
 
 const estiloTitulo = {
 	fontFamily: "Fraunces, Georgia, serif",
@@ -66,7 +67,7 @@ export const CrearViaje = () => {
 		setCargando(true);
 
 		try {
-			const respuesta = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/trips`, {
+			const respuesta = await fetchConSesion(`${import.meta.env.VITE_BACKEND_URL}/api/trips`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -85,10 +86,10 @@ export const CrearViaje = () => {
 
 			// Evaluar la respuesta del backend para capturar el ID del viaje
 			if (datos.id || (datos.trip && datos.trip.id)) {
-				const viajeId = datos.id || datos.trip.id;
+				const viajeId = datos.id || datos.trip?.id;
 				// Redirigir dinámicamente a la vista detallada del viaje creado
 				setTimeout(() => {
-					navigate(`/viaje/${viajeId}`);
+					navigate(`/trips/${viajeId}/planificar`);
 				}, 1500);
 			} else {
 				// Respaldo de navegación en caso de que la API no devuelva un ID
@@ -118,16 +119,6 @@ export const CrearViaje = () => {
 								className="col-lg-7 p-4 p-lg-5"
 								style={{ backgroundColor: "#FFFFFF" }}
 							>
-								<p
-									className="mb-2 text-uppercase fw-semibold"
-									style={{
-										color: "#078A9A",
-										letterSpacing: "0.14em",
-										fontSize: "0.75rem",
-									}}
-								>
-									Tu próxima aventura
-								</p>
 								<h1
 									className="display-6 mb-3"
 									style={estiloTitulo}
@@ -232,7 +223,7 @@ export const CrearViaje = () => {
 										style={{
 											backgroundColor: "#12343B",
 											color: "#FFFFFF",
-											borderRadius: 0,
+											borderRadius: 0
 										}}
 									>
 										{cargando ? "Creando viaje..." : "Crear viaje"}
@@ -263,16 +254,6 @@ export const CrearViaje = () => {
 									className="p-4"
 									style={{ borderLeft: "3px solid #28C3D4" }}
 								>
-									<p
-										className="mb-2 text-uppercase fw-semibold"
-										style={{
-											color: "#28C3D4",
-											letterSpacing: "0.14em",
-											fontSize: "0.75rem",
-										}}
-									>
-										Un itinerario a tu medida
-									</p>
 									<h2
 										className="h1 mb-3"
 										style={{ ...estiloTitulo, color: "#FFFFFF" }}

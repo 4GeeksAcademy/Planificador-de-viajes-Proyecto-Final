@@ -42,8 +42,18 @@ body {
 	min-height: 100vh;
 }
 
-.object-fit-cover {
-	object-fit: cover;
+.app-shell {
+	display: flex;
+	min-height: 100vh;
+	flex-direction: column;
+}
+
+.app-content {
+	flex: 1 0 auto;
+}
+
+.app-content > main.min-vh-100 {
+	min-height: calc(100vh - 163px) !important;
 }
 
 .py-lg-6 {
@@ -52,9 +62,30 @@ body {
 }
 
 @media (max-width: 991.98px) {
+	.app-content > main.min-vh-100 {
+		min-height: calc(100vh - 140px) !important;
+	}
+
+	.navbar-toggler:focus {
+		box-shadow: 0 0 0 0.2rem rgba(140, 227, 237, 0.35);
+	}
+
+	.offcanvas .dropdown-menu {
+		position: static !important;
+		width: 100%;
+		margin: 0 0 0.75rem !important;
+	}
+
 	.py-lg-6 {
 		padding-top: 4rem !important;
 		padding-bottom: 4rem !important;
+	}
+}
+
+@media (max-width: 575.98px) {
+	html,
+	body {
+		overflow-x: hidden;
 	}
 }
 
