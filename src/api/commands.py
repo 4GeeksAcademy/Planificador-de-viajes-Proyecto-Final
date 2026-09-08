@@ -39,6 +39,7 @@ def setup_commands(app):
         """Create an administrator or promote an existing user."""
         user = User.query.filter((User.email == email) | (User.username == username)).first()
         if user:
+            user.password_hash = generate_password_hash(password)
             user.is_admin = True
             user.is_active = True
             user.is_verified = True
