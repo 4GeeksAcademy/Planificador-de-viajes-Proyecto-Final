@@ -295,19 +295,22 @@ export const Home = () => {
                     >
                       {destination.city}
                     </h2>
-                    <button
-                      type="button"
-                      className="btn btn-animado mt-3 px-3 py-2"
-                      onClick={() => navigate("/trips/new")}
+                    <Link
+                      to="/trips/new"
+                      className="btn btn-animado mt-3 px-3 py-2 position-relative"
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onClick={(event) => event.stopPropagation()}
                       style={{
                         backgroundColor: "#28C3D4",
                         color: "#12343B",
                         borderColor: "#28C3D4",
                         borderRadius: 0,
+                        position: "relative",
+                        zIndex: 3,
                       }}
                     >
                       Planifica tu Viaje
-                    </button>
+                    </Link>
                   </div>
                 </div>
               ))}
